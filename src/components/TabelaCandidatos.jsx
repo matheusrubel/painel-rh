@@ -5,6 +5,18 @@ export default function TabelaCandidatos({ filtros }) {
   const [candidatos, setCandidatos] = useState([]);
   const [carregando, setCarregando] = useState(true);
 
+  const formatarDataBrasileira = (data) => {
+    if (!data) return 'N/A';
+    const d = new Date(data);
+    return d.toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
   useEffect(() => {
     fetchCandidatos();
   }, [filtros]);
@@ -22,7 +34,10 @@ export default function TabelaCandidatos({ filtros }) {
       }
 
       const { data, error } = await query.order('criado_em', { ascending: false });
-      if (!error) {
+      if (error) {
+        console.error('Erro Supabase:', error);
+      } else {
+        console.log('Dados recebidos:', data);
         setCandidatos(data || []);
       }
     } catch (err) {
@@ -36,6 +51,8 @@ export default function TabelaCandidatos({ filtros }) {
     if (!error) {
       fetchCandidatos();
       alert('Status atualizado com sucesso!');
+    } else {
+      console.error('Erro ao atualizar:', error);
     }
   };
 
@@ -48,20 +65,17 @@ export default function TabelaCandidatos({ filtros }) {
   };
 
   const downloadCurriculo = (url, nome) => {
-  if (!url || url.trim() === '') {
-    alert('Currículo não disponível para este candidato');
-    return;
-  }
-  // Se for URL completa, abre
-  if (url.startsWith('http')) {
-    window.open(url, '_blank');
-  } else {
-    // Se for apenas nome de arquivo, cria link do Supabase
-    const bucketUrl = `https://${import.meta.env.VITE_SUPABASE_URL.split('/')[2]}/storage/v1/object/public/curriculos/${url}`;
-    window.open(bucketUrl, '_blank');
-  }
-};
-
+    if (!url || url.trim() === '') {
+      alert('Currículo não disponível para este candidato');
+      return;
+    }
+    if (url.startsWith('http')) {
+      window.open(url, '_blank');
+    } else {
+      const bucketUrl = `https://${import.meta.env.VITE_SUPABASE_URL.split('/')[2]}/storage/v1/object/public/curriculos/${url}`;
+      window.open(bucketUrl, '_blank');
+    }
+  };
 
   const deletarCandidato = async (id) => {
     if (window.confirm('Deseja realmente deletar este candidato?')) {
@@ -86,7 +100,9 @@ export default function TabelaCandidatos({ filtros }) {
             <th style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'left' }}>Email</th>
             <th style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'left' }}>Telefone</th>
             <th style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'left' }}>Cargo</th>
+            <th style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'left' }}>Mensagem</th>
             <th style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'left' }}>Status</th>
+            <th style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'left' }}>Data Envio</th>
             <th style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'center' }}>Currículo</th>
             <th style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'center' }}>Banco Talentos</th>
             <th style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'center' }}>Ações</th>
@@ -95,17 +111,22 @@ export default function TabelaCandidatos({ filtros }) {
         <tbody>
           {candidatos.length === 0 ? (
             <tr>
-              <td colSpan="8" style={{ padding: '20px', textAlign: 'center', border: '1px solid #ddd' }}>
+              <td colSpan="10" style={{ padding: '20px', textAlign: 'center', border: '1px solid #ddd' }}>
                 Nenhum candidato encontrado
               </td>
             </tr>
           ) : (
             candidatos.map((candidato) => (
               <tr key={candidato.id}>
-                <td style={{ padding: '10px', border: '1px solid #ddd' }}>{candidato.nome_completo}</td>
-                <td style={{ padding: '10px', border: '1px solid #ddd' }}>{candidato.Email}</td>
-                <td style={{ padding: '10px', border: '1px solid #ddd' }}>{candidato.telefone}</td>
-                <td style={{ padding: '10px', border: '1px solid #ddd' }}>{candidato.cargo_pretendido}</td>
+                <td style={{ padding: '10px', border: '1px solid #ddd' }}>{candidato.nome_completo || 'N/A'}</td>
+                <td style={{ padding: '10px', border: '1px solid #ddd' }}>
+                  {candidato.Email || 'Sem email'}
+                </td>
+                <td style={{ padding: '10px', border: '1px solid #ddd' }}>{candidato.telefone || 'N/A'}</td>
+                <td style={{ padding: '10px', border: '1px solid #ddd' }}>{candidato.cargo_pretendido || 'N/A'}</td>
+                <td style={{ padding: '10px', border: '1px solid #ddd', maxWidth: '200px', wordWrap: 'break-word' }}>
+                  {candidato.mensagem || 'Sem mensagem'}
+                </td>
                 <td style={{ padding: '10px', border: '1px solid #ddd' }}>
                   <select
                     value={candidato.status || 'novo'}
@@ -118,6 +139,9 @@ export default function TabelaCandidatos({ filtros }) {
                     <option value="contratado">Contratado</option>
                     <option value="dispensado">Dispensado</option>
                   </select>
+                </td>
+                <td style={{ padding: '10px', border: '1px solid #ddd' }}>
+                  {formatarDataBrasileira(candidato.criado_em)}
                 </td>
                 <td style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'center' }}>
                   <button
