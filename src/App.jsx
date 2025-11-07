@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from './config/supabase';
 import Login from './components/Login';
 import Dashboard from './pages/Dashboard';
+// import './App.css';  // <-- Deixa comentado por enquanto
 
 function App() {
   const [session, setSession] = useState(null);
@@ -21,18 +22,10 @@ function App() {
   }, []);
 
   if (loading) {
-    return <div style={{ padding: '20px' }}>Carregando...</div>;
+    return <div style={{ padding: '50px', textAlign: 'center' }}>Carregando...</div>;
   }
 
-  return (
-    <div>
-      {!session ? (
-        <Login onLogin={() => setSession(true)} />
-      ) : (
-        <Dashboard />
-      )}
-    </div>
-  );
+  return session ? <Dashboard /> : <Login />;
 }
 
 export default App;
