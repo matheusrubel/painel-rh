@@ -4,6 +4,7 @@ import TabelaCandidatos from '../components/TabelaCandidatos';
 import FiltroCandidatos from '../components/FiltroCandidatos';
 import ModalAdicionarCandidato from '../components/ModalAdicionarCandidato';
 import GestaoVagas from './GestaoVagas';
+import BancoTalentos from './BancoTalentos';
 
 export default function Dashboard() {
   const [filtros, setFiltros] = useState({
@@ -13,7 +14,7 @@ export default function Dashboard() {
   });
   const [modalAberto, setModalAberto] = useState(false);
   const [recarregar, setRecarregar] = useState(false);
-  const [paginaAtual, setPaginaAtual] = useState('candidatos'); // 'candidatos' ou 'vagas'
+  const [paginaAtual, setPaginaAtual] = useState('candidatos');
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -31,31 +32,29 @@ export default function Dashboard() {
           <h1>Gestão de RH</h1>
           <p style={{ color: '#666' }}>Painel de Controle</p>
         </div>
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <button
-            onClick={handleLogout}
-            style={{
-              padding: '10px 20px',
-              backgroundColor: '#dc3545',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer'
-            }}
-          >
-            Sair
-          </button>
-        </div>
+        <button
+          onClick={handleLogout}
+          style={{
+            padding: '10px 20px',
+            backgroundColor: '#dc3545',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer'
+          }}
+        >
+          Sair
+        </button>
       </div>
 
-      {/* Menu de Navegação */}
+      {/* Menu de Navegação - 3 ABAS */}
       <div style={{ display: 'flex', gap: '10px', marginBottom: '30px', borderBottom: '2px solid #ddd' }}>
         <button
           onClick={() => setPaginaAtual('candidatos')}
           style={{
             padding: '10px 20px',
             backgroundColor: paginaAtual === 'candidatos' ? '#28a745' : 'transparent',
-            color: paginaAtual === 'candidatos' ? 'white' : '#333',
+            color: paginaAtual === 'candidatos' ? 'white' : '#888',
             border: 'none',
             borderBottom: paginaAtual === 'candidatos' ? '3px solid #28a745' : 'none',
             cursor: 'pointer',
@@ -69,7 +68,7 @@ export default function Dashboard() {
           style={{
             padding: '10px 20px',
             backgroundColor: paginaAtual === 'vagas' ? '#28a745' : 'transparent',
-            color: paginaAtual === 'vagas' ? 'white' : '#333',
+            color: paginaAtual === 'vagas' ? 'white' : '#888',
             border: 'none',
             borderBottom: paginaAtual === 'vagas' ? '3px solid #28a745' : 'none',
             cursor: 'pointer',
@@ -78,10 +77,27 @@ export default function Dashboard() {
         >
           Vagas
         </button>
+        <button
+          onClick={() => setPaginaAtual('talentos')}
+          style={{
+            padding: '10px 20px',
+            backgroundColor: paginaAtual === 'talentos' ? '#28a745' : 'transparent',
+            color: paginaAtual === 'talentos' ? 'white' : '#888',
+            border: 'none',
+            borderBottom: paginaAtual === 'talentos' ? '3px solid #28a745' : 'none',
+            cursor: 'pointer',
+            fontWeight: 'bold',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '5px'
+          }}
+        >
+          ⭐ Banco de Talentos
+        </button>
       </div>
 
       {/* Conteúdo */}
-      {paginaAtual === 'candidatos' ? (
+      {paginaAtual === 'candidatos' && (
         <>
           <div style={{ marginBottom: '20px' }}>
             <button
@@ -100,16 +116,22 @@ export default function Dashboard() {
             </button>
           </div>
           <FiltroCandidatos filtros={filtros} setFiltros={setFiltros} />
-          <TabelaCandidatos filtros={filtros} key={recarregar} />
+          <TabelaCandidatos 
+            filtros={filtros} 
+            setPaginaAtual={setPaginaAtual}
+            key={recarregar} 
+          />
           <ModalAdicionarCandidato
             isOpen={modalAberto}
             onClose={() => setModalAberto(false)}
             onCandidatoAdicionado={handleCandidatoAdicionado}
           />
         </>
-      ) : (
-        <GestaoVagas />
       )}
+
+      {paginaAtual === 'vagas' && <GestaoVagas />}
+      
+      {paginaAtual === 'talentos' && <BancoTalentos />}
     </div>
   );
 }
