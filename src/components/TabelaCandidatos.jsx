@@ -1,151 +1,146 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../config/supabase';
-import ModalBancoTalentos from './ModalBancoTalentos';
 
 export default function TabelaCandidatos({ filtros, setPaginaAtual }) {
   const [candidatos, setCandidatos] = useState([]);
   const [carregando, setCarregando] = useState(true);
-  const [candidatoExpandido, setCandidatoExpandido] = useState(null);
-  const [modalBancoAberto, setModalBancoAberto] = useState(false);
-  const [candidatoSelecionado, setCandidatoSelecionado] = useState(null);
-
-  const formatarDataBrasileira = (data) => {
-    if (!data) return 'N/A';
-    const d = new Date(data);
-    return d.toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
 
   useEffect(() => {
     fetchCandidatos();
+    
+    // Subscrever a mudanças em tempo real
+    const channel = supabase
+      .channel('candidatos-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'candidatos'
+        },
+        () => {
+          fetchCandidatos();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'etapas_candidato'
+        },
+        () => {
+          fetchCandidatos();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [filtros]);
 
   const fetchCandidatos = async () => {
     setCarregando(true);
     try {
-      // ← NOVO: Filtra para mostrar APENAS candidatos que NÃO estão no banco de talentos
       let query = supabase
         .from('candidatos')
         .select('*')
-        .or('banco_talentos.is.null,banco_talentos.eq.false');
-      
-      if (filtros.status && filtros.status !== 'todos') {
-        query = query.eq('status', filtros.status);
-      }
+        .order('criado_em', { ascending: false });
+
+      // FILTRO PRINCIPAL: Apenas candidatos em TRIAGEM
+      // Candidatos sem etapa_atual OU com etapa_atual = 'triagem'
+      query = query.or('etapa_atual.is.null,etapa_atual.eq.triagem');
+
+      // Filtro de cargo
       if (filtros.cargo) {
         query = query.ilike('cargo_pretendido', `%${filtros.cargo}%`);
       }
 
-      const { data, error } = await query.order('criado_em', { ascending: false });
-      if (error) {
-        console.error('Erro Supabase:', error);
-      } else {
-        setCandidatos(data || []);
-      }
+      // Excluir banco de talentos
+      query = query.or('banco_talentos.is.null,banco_talentos.eq.false');
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+      setCandidatos(data || []);
     } catch (err) {
       console.error('Erro ao buscar candidatos:', err);
     }
     setCarregando(false);
   };
 
-  const atualizarStatus = async (id, novoStatus) => {
-    const { error } = await supabase.from('candidatos').update({ status: novoStatus }).eq('id', id);
-    if (!error) {
+  const handleMoveToBancoTalentos = async (candidatoId) => {
+    if (!confirm('Mover este candidato para o Banco de Talentos?')) return;
+
+    try {
+      const { error } = await supabase
+        .from('candidatos')
+        .update({ banco_talentos: true })
+        .eq('id', candidatoId);
+
+      if (error) throw error;
+      
+      alert('Candidato movido para o Banco de Talentos!');
       fetchCandidatos();
-      alert('Status atualizado com sucesso!');
+    } catch (err) {
+      console.error('Erro ao mover para banco de talentos:', err);
+      alert('Erro ao mover candidato');
     }
   };
 
-  const abrirModalBancoTalentos = (candidato) => {
-    setCandidatoSelecionado(candidato);
-    setModalBancoAberto(true);
-  };
+  const handleDeleteCandidato = async (candidatoId) => {
+    if (!confirm('Tem certeza que deseja excluir este candidato?')) return;
 
-  const adicionarAoBanco = async ({ setor, observacoes }) => {
-    const { error } = await supabase
-      .from('candidatos')
-      .update({ 
-        banco_talentos: true,
-        setor_interesse: setor,
-        observacoes_talentos: observacoes
-      })
-      .eq('id', candidatoSelecionado.id);
-    
-    if (!error) {
-      fetchCandidatos(); // Atualiza a lista (candidato vai sumir daqui)
-      setModalBancoAberto(false);
-      setCandidatoSelecionado(null);
+    try {
+      const { error } = await supabase
+        .from('candidatos')
+        .delete()
+        .eq('id', candidatoId);
+
+      if (error) throw error;
       
-      // Mostra mensagem de sucesso
-      alert('Adicionado ao banco de talentos!');
-      
-      // Muda para aba Talentos após 500ms
-      if (setPaginaAtual) {
-        setTimeout(() => {
-          setPaginaAtual('talentos');
-        }, 500);
-      }
+      alert('Candidato excluído!');
+      fetchCandidatos();
+    } catch (err) {
+      console.error('Erro ao excluir candidato:', err);
+      alert('Erro ao excluir candidato');
     }
   };
 
-  const downloadCurriculo = (url) => {
-    if (!url || url.trim() === '') {
-      alert('Currículo não disponível');
-      return;
+  const handleIniciarProcesso = async (candidatoId) => {
+    try {
+      // Criar etapa inicial de triagem
+      const { error: etapaError } = await supabase
+        .from('etapas_candidato')
+        .insert({
+          candidato_id: candidatoId,
+          etapa: 'triagem',
+          status: 'em_andamento'
+        });
+
+      if (etapaError) throw etapaError;
+
+      // Atualizar etapa_atual
+      await supabase
+        .from('candidatos')
+        .update({ etapa_atual: 'triagem' })
+        .eq('id', candidatoId);
+
+      // Redirecionar para o Pipeline
+      setPaginaAtual('pipeline');
+    } catch (err) {
+      console.error('Erro ao iniciar processo:', err);
+      alert('Erro ao iniciar processo');
     }
-    window.open(url, '_blank');
-  };
-
-  const deletarCandidato = async (id) => {
-    if (window.confirm('Deseja realmente deletar este candidato?')) {
-      const { error } = await supabase.from('candidatos').delete().eq('id', id);
-      if (!error) {
-        fetchCandidatos();
-        alert('Candidato deletado!');
-      }
-    }
-  };
-
-  const toggleExpand = (id) => {
-    setCandidatoExpandido(candidatoExpandido === id ? null : id);
-  };
-
-  const getStatusColor = (status) => {
-    const cores = {
-      'novo': '#3b82f6',
-      'em_analise': '#8b5cf6',
-      'entrevista_agendada': '#eab308',
-      'contratado': '#10b981',
-      'dispensado': '#ef4444'
-    };
-    return cores[status] || '#6c757d';
-  };
-
-  const getStatusTexto = (status) => {
-    const textos = {
-      'novo': '🟦 Novo',
-      'em_analise': '🟪 Em Análise',
-      'entrevista_agendada': '🟨 Entrevista',
-      'contratado': '🟩 Contratado',
-      'dispensado': '🟥 Dispensado'
-    };
-    return textos[status] || status;
   };
 
   if (carregando) {
     return (
       <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '3rem',
-        gap: '1rem'
+        textAlign: 'center',
+        padding: '40px',
+        color: '#94a3b8'
       }}>
         <div style={{
           width: '40px',
@@ -153,9 +148,10 @@ export default function TabelaCandidatos({ filtros, setPaginaAtual }) {
           border: '3px solid #334155',
           borderTopColor: '#f59e0b',
           borderRadius: '50%',
-          animation: 'spin 1s linear infinite'
+          animation: 'spin 1s linear infinite',
+          margin: '0 auto 15px'
         }}></div>
-        <p style={{ color: '#94a3b8' }}>Carregando candidatos...</p>
+        Carregando candidatos...
       </div>
     );
   }
@@ -164,214 +160,189 @@ export default function TabelaCandidatos({ filtros, setPaginaAtual }) {
     return (
       <div style={{
         textAlign: 'center',
-        padding: '4rem 2rem',
-        color: '#94a3b8'
+        padding: '40px',
+        color: '#64748b'
       }}>
-        <p style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '0.5rem', color: '#cbd5e1' }}>
-          Nenhum candidato encontrado
+        <div style={{ fontSize: '48px', marginBottom: '10px' }}>🎉</div>
+        <p style={{ fontSize: '18px', fontWeight: 'bold', color: '#f8fafc', marginBottom: '8px' }}>
+          Nenhum candidato novo!
         </p>
-        <p style={{ fontSize: '0.875rem' }}>
-          Tente ajustar os filtros de pesquisa
+        <p style={{ fontSize: '14px' }}>
+          Todos os candidatos estão em processo no Pipeline
         </p>
+        <button
+          onClick={() => setPaginaAtual('pipeline')}
+          style={{
+            marginTop: '15px',
+            padding: '10px 20px',
+            background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontWeight: 'bold',
+            fontSize: '14px'
+          }}
+        >
+          🎯 Ver Pipeline
+        </button>
       </div>
     );
   }
 
   return (
     <div>
-      <div style={{ padding: '1rem 0', marginBottom: '1rem' }}>
-        <p style={{ color: '#94a3b8', fontSize: '0.875rem' }}>
-          {candidatos.length} candidato(s) encontrado(s)
-        </p>
+      {/* Info Box */}
+      <div style={{
+        backgroundColor: '#0f172a',
+        border: '1px solid #334155',
+        borderRadius: '8px',
+        padding: '15px 20px',
+        marginBottom: '20px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '12px'
+      }}>
+        <div style={{ fontSize: '24px' }}>📋</div>
+        <div>
+          <div style={{ color: '#fbbf24', fontWeight: 'bold', fontSize: '14px', marginBottom: '3px' }}>
+            Candidatos Novos (Triagem)
+          </div>
+          <div style={{ color: '#94a3b8', fontSize: '13px' }}>
+            Estes candidatos ainda não entraram no processo. Inicie o processo para movê-los ao Pipeline.
+          </div>
+        </div>
       </div>
 
-      <div style={{ display: 'grid', gap: '15px' }}>
-        {candidatos.map(candidato => (
-          <div key={candidato.id} style={{
-            border: '1px solid #334155',
-            borderRadius: '8px',
-            backgroundColor: '#1e293b',
-            overflow: 'hidden'
-          }}>
-            <div 
-              onClick={() => toggleExpand(candidato.id)}
-              style={{ 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                alignItems: 'center',
-                padding: '15px 20px',
-                cursor: 'pointer',
-                transition: 'background-color 0.2s',
-                backgroundColor: candidatoExpandido === candidato.id ? '#334155' : 'transparent'
-              }}
-            >
-              <div style={{ flex: 1 }}>
-                <h3 style={{ margin: '0 0 5px 0', color: '#f8fafc', fontSize: '18px' }}>
-                  {candidato.nome_completo}
-                </h3>
-                <div style={{ fontSize: '13px', color: '#94a3b8' }}>
-                  <span>📧 {candidato.Email}</span>
-                  {candidato.telefone && <span> | 📱 {candidato.telefone}</span>}
-                </div>
-                <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '3px' }}>
-                  <span>💼 {candidato.cargo_pretendido}</span>
-                  <span> | 📅 {formatarDataBrasileira(candidato.criado_em)}</span>
-                </div>
-              </div>
-              
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{
-                  padding: '5px 15px',
-                  backgroundColor: getStatusColor(candidato.status),
-                  color: 'white',
-                  borderRadius: '20px',
-                  fontSize: '11px',
-                  fontWeight: 'bold'
-                }}>
-                  {getStatusTexto(candidato.status)}
-                </div>
-                
-                <span style={{ fontSize: '20px', color: '#94a3b8' }}>
-                  {candidatoExpandido === candidato.id ? '▲' : '▼'}
-                </span>
-              </div>
-            </div>
-
-            {candidatoExpandido === candidato.id && (
-              <div style={{ 
-                padding: '20px', 
-                borderTop: '1px solid #334155',
-                animation: 'slideDown 0.3s ease-out'
-              }}>
-                <div style={{ display: 'grid', gap: '15px' }}>
-                  {candidato.mensagem && (
-                    <div>
-                      <strong style={{ color: '#f8fafc' }}>Mensagem:</strong>
-                      <p style={{ color: '#cbd5e1', marginTop: '5px', whiteSpace: 'pre-wrap' }}>
-                        {candidato.mensagem}
-                      </p>
-                    </div>
-                  )}
-
-                  {candidato.linkedin_url && (
-                    <div>
-                      <strong style={{ color: '#f8fafc' }}>LinkedIn:</strong>
-                      <div style={{ marginTop: '5px' }}>
-                        <a href={candidato.linkedin_url} target="_blank" rel="noopener noreferrer" style={{ color: '#f59e0b' }}>
-                          Ver perfil
-                        </a>
-                      </div>
-                    </div>
-                  )}
-
-                  <div style={{ 
-                    display: 'flex', 
-                    gap: '10px', 
-                    flexWrap: 'wrap',
-                    paddingTop: '15px', 
-                    borderTop: '1px solid #334155' 
+      {/* Tabela */}
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{
+          width: '100%',
+          borderCollapse: 'collapse',
+          backgroundColor: '#1e293b',
+          borderRadius: '8px',
+          overflow: 'hidden'
+        }}>
+          <thead>
+            <tr style={{ backgroundColor: '#0f172a' }}>
+              <th style={thStyle}>Nome</th>
+              <th style={thStyle}>Email</th>
+              <th style={thStyle}>Cargo</th>
+              <th style={thStyle}>Status</th>
+              <th style={thStyle}>Data</th>
+              <th style={thStyle}>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {candidatos.map((candidato, index) => (
+              <tr
+                key={candidato.id}
+                style={{
+                  backgroundColor: index % 2 === 0 ? '#1e293b' : '#334155',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#475569';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = index % 2 === 0 ? '#1e293b' : '#334155';
+                }}
+              >
+                <td style={tdStyle}>
+                  <div style={{ fontWeight: 'bold', color: '#f8fafc' }}>
+                    {candidato.nome_completo}
+                  </div>
+                </td>
+                <td style={tdStyle}>
+                  <div style={{ color: '#94a3b8', fontSize: '14px' }}>
+                    {candidato.Email}
+                  </div>
+                </td>
+                <td style={tdStyle}>
+                  <div style={{ color: '#cbd5e1', fontSize: '14px' }}>
+                    {candidato.cargo_pretendido}
+                  </div>
+                </td>
+                <td style={tdStyle}>
+                  <div style={{
+                    display: 'inline-block',
+                    padding: '4px 12px',
+                    backgroundColor: '#3b82f6',
+                    color: 'white',
+                    borderRadius: '6px',
+                    fontSize: '12px',
+                    fontWeight: 'bold'
                   }}>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '12px', color: '#94a3b8', marginBottom: '5px' }}>
-                        Status:
-                      </label>
-                      <select
-                        value={candidato.status || 'novo'}
-                        onChange={(e) => atualizarStatus(candidato.id, e.target.value)}
+                    📋 Novo
+                  </div>
+                </td>
+                <td style={tdStyle}>
+                  <div style={{ color: '#94a3b8', fontSize: '13px' }}>
+                    {new Date(candidato.criado_em).toLocaleDateString('pt-BR')}
+                  </div>
+                </td>
+                <td style={tdStyle}>
+                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                    {/* Ver Currículo */}
+                    {candidato.curriculo_url && (
+                      <button
+                        onClick={() => window.open(candidato.curriculo_url, '_blank')}
                         style={{
-                          padding: '8px 12px',
-                          borderRadius: '4px',
-                          border: '1px solid #334155',
-                          fontSize: '14px',
-                          cursor: 'pointer',
-                          background: '#334155',
-                          color: '#f8fafc'
+                          ...btnStyle,
+                          backgroundColor: '#10b981'
                         }}
+                        title="Ver Currículo"
                       >
-                        <option value="novo">🟦 Novo</option>
-                        <option value="em_analise">🟪 Em Análise</option>
-                        <option value="entrevista_agendada">🟨 Entrevista</option>
-                        <option value="contratado">🟩 Contratado</option>
-                        <option value="dispensado">🟥 Dispensado</option>
-                      </select>
-                    </div>
+                        📄
+                      </button>
+                    )}
 
+                    {/* Iniciar Processo */}
                     <button
-                      onClick={() => downloadCurriculo(candidato.curriculo_url)}
+                      onClick={() => handleIniciarProcesso(candidato.id)}
                       style={{
-                        padding: '8px 15px',
-                        backgroundColor: '#10b981',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        fontSize: '14px',
-                        alignSelf: 'flex-end'
-                      }}
-                    >
-                      📄 Ver Currículo
-                    </button>
-
-                    <button
-                      onClick={() => abrirModalBancoTalentos(candidato)}
-                      style={{
-                        padding: '8px 15px',
+                        ...btnStyle,
                         backgroundColor: '#f59e0b',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        fontSize: '14px',
-                        alignSelf: 'flex-end'
+                        padding: '6px 12px',
+                        fontWeight: 'bold'
                       }}
+                      title="Iniciar Processo (Mover para Pipeline)"
                     >
-                      ⭐ Adicionar ao Banco
+                      ▶️ Iniciar
                     </button>
 
+                    {/* Mover para Banco de Talentos */}
                     <button
-                      onClick={() => deletarCandidato(candidato.id)}
+                      onClick={() => handleMoveToBancoTalentos(candidato.id)}
                       style={{
-                        padding: '8px 15px',
-                        backgroundColor: '#ef4444',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        fontSize: '14px',
-                        alignSelf: 'flex-end'
+                        ...btnStyle,
+                        backgroundColor: '#8b5cf6'
                       }}
+                      title="Mover para Banco de Talentos"
                     >
-                      🗑️ Deletar
+                      ⭐
+                    </button>
+
+                    {/* Excluir */}
+                    <button
+                      onClick={() => handleDeleteCandidato(candidato.id)}
+                      style={{
+                        ...btnStyle,
+                        backgroundColor: '#ef4444'
+                      }}
+                      title="Excluir"
+                    >
+                      🗑️
                     </button>
                   </div>
-                </div>
-              </div>
-            )}
-          </div>
-        ))}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
-      <ModalBancoTalentos
-        isOpen={modalBancoAberto}
-        onClose={() => {
-          setModalBancoAberto(false);
-          setCandidatoSelecionado(null);
-        }}
-        onConfirm={adicionarAoBanco}
-        candidato={candidatoSelecionado}
-      />
-
       <style>{`
-        @keyframes slideDown {
-          from {
-            opacity: 0;
-            transform: translateY(-10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
         @keyframes spin {
           to { transform: rotate(360deg); }
         }
@@ -379,3 +350,32 @@ export default function TabelaCandidatos({ filtros, setPaginaAtual }) {
     </div>
   );
 }
+
+// Estilos
+const thStyle = {
+  padding: '15px',
+  textAlign: 'left',
+  color: '#fbbf24',
+  fontWeight: 'bold',
+  fontSize: '14px',
+  borderBottom: '2px solid #334155'
+};
+
+const tdStyle = {
+  padding: '12px 15px',
+  borderBottom: '1px solid #334155'
+};
+
+const btnStyle = {
+  padding: '6px 10px',
+  border: 'none',
+  borderRadius: '6px',
+  cursor: 'pointer',
+  fontSize: '14px',
+  transition: 'all 0.2s',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  color: 'white',
+  fontWeight: 'normal'
+};

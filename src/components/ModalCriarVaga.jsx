@@ -57,8 +57,23 @@ export default function ModalCriarVaga({ isOpen, onClose, onVagaCriada }) {
 
   if (!isOpen) return null;
 
-  const labelStyle = { color: '#333', display: 'block', marginBottom: '5px', fontWeight: 'bold' };
-  const inputStyle = { width: '100%', padding: '8px', border: '1px solid #ddd', boxSizing: 'border-box', borderRadius: '4px' };
+  const labelStyle = { 
+    color: '#cbd5e1', 
+    display: 'block', 
+    marginBottom: '5px', 
+    fontWeight: 'bold' 
+  };
+  
+  const inputStyle = { 
+    width: '100%', 
+    padding: '10px', 
+    border: '1px solid #475569', 
+    boxSizing: 'border-box', 
+    borderRadius: '6px',
+    backgroundColor: '#334155',
+    color: '#f8fafc',
+    fontSize: '14px'
+  };
 
   return (
     <div style={{
@@ -67,7 +82,7 @@ export default function ModalCriarVaga({ isOpen, onClose, onVagaCriada }) {
       left: 0,
       right: 0,
       bottom: 0,
-      backgroundColor: 'rgba(0,0,0,0.5)',
+      backgroundColor: 'rgba(0,0,0,0.8)',
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',
@@ -75,17 +90,18 @@ export default function ModalCriarVaga({ isOpen, onClose, onVagaCriada }) {
       overflowY: 'auto'
     }}>
       <div style={{
-        backgroundColor: 'white',
+        backgroundColor: '#1e293b',
         padding: '30px',
-        borderRadius: '8px',
+        borderRadius: '12px',
         maxWidth: '600px',
         width: '90%',
-        boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+        boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+        border: '1px solid #334155',
         maxHeight: '90vh',
         overflowY: 'auto',
         margin: '20px'
       }}>
-        <h2 style={{ marginBottom: '20px', color: '#333' }}>Criar Nova Vaga</h2>
+        <h2 style={{ marginBottom: '20px', color: '#f8fafc' }}>Criar Nova Vaga</h2>
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: '15px' }}>
             <label style={labelStyle}>Título da Vaga *</label>
@@ -107,7 +123,7 @@ export default function ModalCriarVaga({ isOpen, onClose, onVagaCriada }) {
               value={formData.descricao}
               onChange={handleChange}
               placeholder="Descrição geral da vaga..."
-              style={{ ...inputStyle, minHeight: '80px', fontFamily: 'inherit' }}
+              style={{ ...inputStyle, minHeight: '80px', fontFamily: 'inherit', resize: 'vertical' }}
             />
           </div>
 
@@ -118,7 +134,7 @@ export default function ModalCriarVaga({ isOpen, onClose, onVagaCriada }) {
               value={formData.atribuicoes}
               onChange={handleChange}
               placeholder="Análise de dados&#10;Automações&#10;Integração de sistemas"
-              style={{ ...inputStyle, minHeight: '100px', fontFamily: 'inherit' }}
+              style={{ ...inputStyle, minHeight: '100px', fontFamily: 'inherit', resize: 'vertical' }}
             />
           </div>
 
@@ -129,7 +145,7 @@ export default function ModalCriarVaga({ isOpen, onClose, onVagaCriada }) {
               value={formData.beneficios}
               onChange={handleChange}
               placeholder="Plano de carreira&#10;Unimed&#10;VR e VT"
-              style={{ ...inputStyle, minHeight: '100px', fontFamily: 'inherit' }}
+              style={{ ...inputStyle, minHeight: '100px', fontFamily: 'inherit', resize: 'vertical' }}
             />
           </div>
 
@@ -140,7 +156,7 @@ export default function ModalCriarVaga({ isOpen, onClose, onVagaCriada }) {
               value={formData.requisitos}
               onChange={handleChange}
               placeholder="Ensino superior completo&#10;Experiência com Python&#10;Conhecimento em SQL"
-              style={{ ...inputStyle, minHeight: '100px', fontFamily: 'inherit' }}
+              style={{ ...inputStyle, minHeight: '100px', fontFamily: 'inherit', resize: 'vertical' }}
             />
           </div>
 
@@ -161,14 +177,27 @@ export default function ModalCriarVaga({ isOpen, onClose, onVagaCriada }) {
               type="submit"
               disabled={carregando}
               style={{
-                padding: '10px 20px',
-                backgroundColor: '#28a745',
+                padding: '12px 20px',
+                background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
                 color: 'white',
                 border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
+                borderRadius: '6px',
+                cursor: carregando ? 'not-allowed' : 'pointer',
                 flex: 1,
-                fontWeight: 'bold'
+                fontWeight: 'bold',
+                fontSize: '14px',
+                opacity: carregando ? 0.7 : 1,
+                transition: 'all 0.3s'
+              }}
+              onMouseEnter={(e) => {
+                if (!carregando) {
+                  e.target.style.transform = 'translateY(-2px)';
+                  e.target.style.boxShadow = '0 6px 20px rgba(245, 158, 11, 0.4)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.transform = 'translateY(0)';
+                e.target.style.boxShadow = 'none';
               }}
             >
               {carregando ? 'Criando...' : 'Criar Vaga'}
@@ -177,13 +206,21 @@ export default function ModalCriarVaga({ isOpen, onClose, onVagaCriada }) {
               type="button"
               onClick={onClose}
               style={{
-                padding: '10px 20px',
-                backgroundColor: '#6c757d',
+                padding: '12px 20px',
+                backgroundColor: '#475569',
                 color: 'white',
                 border: 'none',
-                borderRadius: '4px',
+                borderRadius: '6px',
                 cursor: 'pointer',
-                flex: 1
+                flex: 1,
+                fontSize: '14px',
+                transition: 'all 0.3s'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = '#64748b';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = '#475569';
               }}
             >
               Cancelar
