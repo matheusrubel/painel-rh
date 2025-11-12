@@ -655,7 +655,7 @@ export default function BancoTalentos() {
         titulo="Deletar Candidato Permanentemente?"
         mensagem="⚠️ ATENÇÃO: Esta ação é irreversível! O candidato será completamente removido do sistema."
         tipo="deletar"
-        carregando={processando}
+        carregando={processando}  
       />
     </div>
   );

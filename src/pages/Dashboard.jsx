@@ -7,6 +7,7 @@ import GestaoVagas from './GestaoVagas';
 import BancoTalentos from './BancoTalentos';
 import KanbanCandidatos from '../components/KanbanCandidatos';
 import DashboardAnalytics from './DashboardAnalytics';
+import HistoricoCandidatos from './HistoricoCandidatos'; // ✅ NOVO
 
 export default function Dashboard() {
   const [modalAberto, setModalAberto] = useState(false);
@@ -86,14 +87,6 @@ export default function Dashboard() {
               fontWeight: '600',
               transition: 'all 0.2s ease'
             }}
-            onMouseEnter={(e) => {
-              e.target.style.background = 'rgba(239, 68, 68, 0.3)';
-              e.target.style.color = '#fee2e2';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.background = 'rgba(239, 68, 68, 0.2)';
-              e.target.style.color = '#fca5a5';
-            }}
           >
             🚪 Sair
           </button>
@@ -111,11 +104,12 @@ export default function Dashboard() {
         overflowX: 'auto'
       }}>
         {[
-          { id: 'candidatos', label: '📋 Candidatos', icon: '📋' },
-          { id: 'pipeline', label: '🎯 Pipeline', icon: '🎯' },
-          { id: 'vagas', label: '💼 Vagas', icon: '💼' },
-          { id: 'banco', label: '⭐ Banco de Talentos', icon: '⭐' },
-          { id: 'analytics', label: '📊 Analytics', icon: '📊' }
+          { id: 'candidatos', label: '📋 Candidatos' },
+          { id: 'pipeline', label: '🎯 Pipeline' },
+          { id: 'vagas', label: '💼 Vagas' },
+          { id: 'banco', label: '⭐ Banco de Talentos' },
+          { id: 'historico', label: '📜 Histórico' }, // ✅ NOVO
+          { id: 'analytics', label: '📊 Analytics' }
         ].map(item => (
           <button
             key={item.id}
@@ -139,18 +133,6 @@ export default function Dashboard() {
                 ? '0 4px 12px rgba(59, 130, 246, 0.3)' 
                 : 'none'
             }}
-            onMouseEnter={(e) => {
-              if (paginaAtual !== item.id) {
-                e.target.style.background = 'rgba(51, 65, 85, 0.5)';
-                e.target.style.transform = 'translateY(-1px)';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (paginaAtual !== item.id) {
-                e.target.style.background = 'rgba(51, 65, 85, 0.3)';
-                e.target.style.transform = 'translateY(0)';
-              }
-            }}
           >
             {item.label}
           </button>
@@ -159,90 +141,52 @@ export default function Dashboard() {
 
       {/* Main Content */}
       <main style={{ padding: '30px', maxWidth: '1600px', margin: '0 auto' }}>
-        {/* Botão Adicionar Candidato - Apenas na aba Candidatos */}
         {paginaAtual === 'candidatos' && (
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center',
-            marginBottom: '20px'
-          }}>
-            <h2 style={{ 
-              color: '#f8fafc', 
-              margin: 0,
-              fontSize: '22px',
-              fontWeight: '700'
+          <div>
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              marginBottom: '20px'
             }}>
-              📋 Candidatos Novos
-            </h2>
-            <button
-              onClick={() => setModalAberto(true)}
-              style={{
-                padding: '12px 24px',
-                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                color: 'white',
-                border: 'none',
-                borderRadius: '10px',
-                cursor: 'pointer',
-                fontSize: '14px',
-                fontWeight: '700',
-                transition: 'all 0.2s ease',
-                boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.transform = 'translateY(-2px)';
-                e.target.style.boxShadow = '0 6px 20px rgba(16, 185, 129, 0.4)';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.transform = 'translateY(0)';
-                e.target.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.3)';
-              }}
-            >
-              ➕ Adicionar Candidato
-            </button>
+              <h2 style={{ 
+                color: '#f8fafc', 
+                margin: 0,
+                fontSize: '22px',
+                fontWeight: '700'
+              }}>
+                📋 Candidatos Novos
+              </h2>
+              <button
+                onClick={() => setModalAberto(true)}
+                style={{
+                  padding: '12px 24px',
+                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '10px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '700',
+                  transition: 'all 0.2s ease',
+                  boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
+                }}
+              >
+                ➕ Adicionar Candidato
+              </button>
+            </div>
+            <TabelaCandidatos filtros={{}} setPaginaAtual={setPaginaAtual} key={recarregar} />
           </div>
         )}
 
-        {/* Páginas */}
-        {paginaAtual === 'candidatos' && (
-          <TabelaCandidatos 
-            filtros={{}} 
-            setPaginaAtual={setPaginaAtual} 
-            key={recarregar} 
-          />
-        )}
-
         {paginaAtual === 'pipeline' && <KanbanCandidatos />}
-
         {paginaAtual === 'vagas' && <GestaoVagas />}
-
         {paginaAtual === 'banco' && <BancoTalentos />}
-
+        {paginaAtual === 'historico' && <HistoricoCandidatos />} {/* ✅ NOVO */}
         {paginaAtual === 'analytics' && <DashboardAnalytics />}
       </main>
 
-      {/* Footer */}
-      <footer style={{
-        marginTop: '40px',
-        padding: '20px 30px',
-        borderTop: '1px solid rgba(51, 65, 85, 0.6)',
-        background: 'rgba(15, 23, 42, 0.5)',
-        backdropFilter: 'blur(10px)',
-        textAlign: 'center'
-      }}>
-        <p style={{ 
-          color: '#64748b', 
-          margin: 0, 
-          fontSize: '14px' 
-        }}>
-          © 2025 Michelc Assessoria Contábil | Desenvolvido por SIDA
-        </p>
-      </footer>
-
-      {/* Modal Adicionar Candidato */}
+      {/* Modal */}
       <ModalAdicionarCandidato
         isOpen={modalAberto}
         onClose={() => setModalAberto(false)}

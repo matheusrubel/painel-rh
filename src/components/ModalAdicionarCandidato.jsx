@@ -3,18 +3,27 @@ import { supabase } from '../config/supabase';
 import { candidatoSchema } from '../schemas/candidatoSchema';
 import { showSuccess, showError } from '../utils/toast';
 import { handleError } from '../utils/errorHandler';
+import { useHistoricoCandidato } from '../hooks/useHistoricoCandidato';
+import AlertaDuplicataHistorico from './AlertaDuplicataHistorico';
 
 export default function ModalAdicionarCandidato({ isOpen, onClose, onCandidatoAdicionado }) {
   const [formData, setFormData] = useState({
     nome_completo: '',
     Email: '',
     telefone: '',
+    cpf: '',
     cargo_pretendido: '',
     mensagem: ''
   });
+  
   const [arquivo, setArquivo] = useState(null);
   const [nomeArquivo, setNomeArquivo] = useState('');
   const [carregando, setCarregando] = useState(false);
+
+  // Hook de histórico
+  const { verificarDuplicata } = useHistoricoCandidato();
+  const [alertaHistorico, setAlertaHistorico] = useState(null);
+  const [dadosTemporarios, setDadosTemporarios] = useState(null);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -28,8 +37,13 @@ export default function ModalAdicionarCandidato({ isOpen, onClose, onCandidatoAd
         showError('Arquivo muito grande! Máximo 5MB');
         return;
       }
-      
-      const tiposPermitidos = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+
+      const tiposPermitidos = [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      ];
+
       if (!tiposPermitidos.includes(file.type)) {
         showError('Apenas arquivos PDF ou Word são permitidos');
         return;
@@ -42,10 +56,35 @@ export default function ModalAdicionarCandidato({ isOpen, onClose, onCandidatoAd
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!formData.nome_completo || !formData.Email) {
+      showError('Preencha nome e email');
+      return;
+    }
+
+    // VERIFICAR HISTÓRICO ANTES DE SALVAR
+    const resultado = await verificarDuplicata(
+      formData.nome_completo,
+      formData.telefone,
+      formData.cpf
+    );
+
+    if (resultado.isDuplicata) {
+      // Salvar dados temporariamente e mostrar alerta
+      setDadosTemporarios(formData);
+      setAlertaHistorico(resultado.historico);
+      return; // Não salva ainda, aguarda confirmação
+    }
+
+    // Se não tem duplicata, salva direto
+    await salvarCandidato(formData);
+  };
+
+  const salvarCandidato = async (dados) => {
     setCarregando(true);
 
     try {
-      const dadosValidados = candidatoSchema.parse(formData);
+      const dadosValidados = candidatoSchema.parse(dados);
 
       let curriculo_url = '';
 
@@ -74,11 +113,13 @@ export default function ModalAdicionarCandidato({ isOpen, onClose, onCandidatoAd
       if (error) throw error;
 
       showSuccess('✅ Candidato adicionado com sucesso!');
-
+      
+      // Reset form
       setFormData({
         nome_completo: '',
         Email: '',
         telefone: '',
+        cpf: '',
         cargo_pretendido: '',
         mensagem: ''
       });
@@ -102,6 +143,11 @@ export default function ModalAdicionarCandidato({ isOpen, onClose, onCandidatoAd
     }
   };
 
+  const handleContinuarMesmoAssim = () => {
+    setAlertaHistorico(null);
+    salvarCandidato(dadosTemporarios);
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -117,27 +163,72 @@ export default function ModalAdicionarCandidato({ isOpen, onClose, onCandidatoAd
       justifyContent: 'center',
       alignItems: 'center',
       zIndex: 1000,
-      overflowY: 'auto'
+      padding: '20px'
     }}>
       <div style={{
         background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
-        padding: '30px',
         borderRadius: '16px',
+        padding: '30px',
         maxWidth: '600px',
-        width: '90%',
+        width: '100%',
         maxHeight: '90vh',
         overflowY: 'auto',
         border: '1px solid #475569',
-        boxShadow: '0 25px 60px rgba(0,0,0,0.6)',
-        margin: '20px 0'
+        boxShadow: '0 25px 50px rgba(0,0,0,0.5)'
       }}>
-        <h2 style={{ color: '#f8fafc', marginBottom: '20px', fontSize: '24px', fontWeight: '700' }}>
-          ➕ Adicionar Novo Candidato
-        </h2>
+        {/* Header */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '24px',
+          paddingBottom: '16px',
+          borderBottom: '1px solid #475569'
+        }}>
+          <h2 style={{
+            color: '#f8fafc',
+            margin: 0,
+            fontSize: '22px',
+            fontWeight: '700'
+          }}>
+            ➕ Adicionar Candidato
+          </h2>
+          <button
+            onClick={onClose}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: '#94a3b8',
+              fontSize: '24px',
+              cursor: 'pointer',
+              padding: '4px 8px',
+              borderRadius: '6px',
+              transition: 'all 0.2s'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.background = 'rgba(248, 113, 113, 0.1)';
+              e.target.style.color = '#f87171';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.background = 'transparent';
+              e.target.style.color = '#94a3b8';
+            }}
+          >
+            ✕
+          </button>
+        </div>
 
-        <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{ color: '#cbd5e1', display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600' }}>
+        {/* Formulário */}
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {/* Nome Completo */}
+          <div>
+            <label style={{
+              color: '#cbd5e1',
+              display: 'block',
+              marginBottom: '8px',
+              fontSize: '14px',
+              fontWeight: '600'
+            }}>
               Nome Completo *
             </label>
             <input
@@ -146,31 +237,31 @@ export default function ModalAdicionarCandidato({ isOpen, onClose, onCandidatoAd
               value={formData.nome_completo}
               onChange={handleChange}
               required
-              placeholder="Ex: João Silva Santos"
               style={{
                 width: '100%',
                 padding: '12px',
-                background: 'rgba(15, 23, 42, 0.6)',
+                background: '#0f172a',
+                border: '1px solid #475569',
+                borderRadius: '8px',
                 color: '#f8fafc',
-                border: '1px solid rgba(71, 85, 105, 0.4)',
-                borderRadius: '10px',
                 fontSize: '14px',
                 outline: 'none',
-                transition: 'all 0.2s ease'
+                transition: 'border-color 0.2s'
               }}
-              onFocus={(e) => {
-                e.target.style.borderColor = '#3b82f6';
-                e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = 'rgba(71, 85, 105, 0.4)';
-                e.target.style.boxShadow = 'none';
-              }}
+              onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
+              onBlur={(e) => e.target.style.borderColor = '#475569'}
             />
           </div>
 
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{ color: '#cbd5e1', display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600' }}>
+          {/* Email */}
+          <div>
+            <label style={{
+              color: '#cbd5e1',
+              display: 'block',
+              marginBottom: '8px',
+              fontSize: '14px',
+              fontWeight: '600'
+            }}>
               Email *
             </label>
             <input
@@ -179,164 +270,202 @@ export default function ModalAdicionarCandidato({ isOpen, onClose, onCandidatoAd
               value={formData.Email}
               onChange={handleChange}
               required
-              placeholder="exemplo@email.com"
               style={{
                 width: '100%',
                 padding: '12px',
-                background: 'rgba(15, 23, 42, 0.6)',
+                background: '#0f172a',
+                border: '1px solid #475569',
+                borderRadius: '8px',
                 color: '#f8fafc',
-                border: '1px solid rgba(71, 85, 105, 0.4)',
-                borderRadius: '10px',
                 fontSize: '14px',
-                outline: 'none',
-                transition: 'all 0.2s ease'
+                outline: 'none'
               }}
-              onFocus={(e) => {
-                e.target.style.borderColor = '#3b82f6';
-                e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = 'rgba(71, 85, 105, 0.4)';
-                e.target.style.boxShadow = 'none';
-              }}
+              onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
+              onBlur={(e) => e.target.style.borderColor = '#475569'}
             />
           </div>
 
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{ color: '#cbd5e1', display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600' }}>
-              Telefone
-            </label>
-            <input
-              type="tel"
-              name="telefone"
-              value={formData.telefone}
-              onChange={handleChange}
-              placeholder="(XX) XXXXX-XXXX"
-              style={{
-                width: '100%',
-                padding: '12px',
-                background: 'rgba(15, 23, 42, 0.6)',
-                color: '#f8fafc',
-                border: '1px solid rgba(71, 85, 105, 0.4)',
-                borderRadius: '10px',
+          {/* Telefone e CPF */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <div>
+              <label style={{
+                color: '#cbd5e1',
+                display: 'block',
+                marginBottom: '8px',
                 fontSize: '14px',
-                outline: 'none',
-                transition: 'all 0.2s ease'
-              }}
-              onFocus={(e) => {
-                e.target.style.borderColor = '#3b82f6';
-                e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = 'rgba(71, 85, 105, 0.4)';
-                e.target.style.boxShadow = 'none';
-              }}
-            />
-            <small style={{ color: '#94a3b8', fontSize: '12px' }}>
-              Formato: (XX) XXXXX-XXXX
-            </small>
+                fontWeight: '600'
+              }}>
+                Telefone
+              </label>
+              <input
+                type="tel"
+                name="telefone"
+                value={formData.telefone}
+                onChange={handleChange}
+                placeholder="(00) 00000-0000"
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  background: '#0f172a',
+                  border: '1px solid #475569',
+                  borderRadius: '8px',
+                  color: '#f8fafc',
+                  fontSize: '14px',
+                  outline: 'none'
+                }}
+                onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
+                onBlur={(e) => e.target.style.borderColor = '#475569'}
+              />
+            </div>
+
+            <div>
+              <label style={{
+                color: '#cbd5e1',
+                display: 'block',
+                marginBottom: '8px',
+                fontSize: '14px',
+                fontWeight: '600'
+              }}>
+                CPF
+              </label>
+              <input
+                type="text"
+                name="cpf"
+                value={formData.cpf}
+                onChange={handleChange}
+                placeholder="000.000.000-00"
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  background: '#0f172a',
+                  border: '1px solid #475569',
+                  borderRadius: '8px',
+                  color: '#f8fafc',
+                  fontSize: '14px',
+                  outline: 'none'
+                }}
+                onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
+                onBlur={(e) => e.target.style.borderColor = '#475569'}
+              />
+            </div>
           </div>
 
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{ color: '#cbd5e1', display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600' }}>
-              Cargo Pretendido *
+          {/* Cargo Pretendido */}
+          <div>
+            <label style={{
+              color: '#cbd5e1',
+              display: 'block',
+              marginBottom: '8px',
+              fontSize: '14px',
+              fontWeight: '600'
+            }}>
+              Cargo Pretendido
             </label>
             <input
               type="text"
               name="cargo_pretendido"
               value={formData.cargo_pretendido}
               onChange={handleChange}
-              required
               placeholder="Ex: Desenvolvedor Full Stack"
               style={{
                 width: '100%',
                 padding: '12px',
-                background: 'rgba(15, 23, 42, 0.6)',
+                background: '#0f172a',
+                border: '1px solid #475569',
+                borderRadius: '8px',
                 color: '#f8fafc',
-                border: '1px solid rgba(71, 85, 105, 0.4)',
-                borderRadius: '10px',
                 fontSize: '14px',
-                outline: 'none',
-                transition: 'all 0.2s ease'
+                outline: 'none'
               }}
-              onFocus={(e) => {
-                e.target.style.borderColor = '#3b82f6';
-                e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = 'rgba(71, 85, 105, 0.4)';
-                e.target.style.boxShadow = 'none';
-              }}
+              onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
+              onBlur={(e) => e.target.style.borderColor = '#475569'}
             />
           </div>
 
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{ color: '#cbd5e1', display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600' }}>
+          {/* Currículo */}
+          <div>
+            <label style={{
+              color: '#cbd5e1',
+              display: 'block',
+              marginBottom: '8px',
+              fontSize: '14px',
+              fontWeight: '600'
+            }}>
               Currículo (PDF ou Word - Máx 5MB)
             </label>
-            <input
-              type="file"
-              accept=".pdf,.doc,.docx"
-              onChange={handleFileChange}
-              style={{
-                width: '100%',
-                padding: '12px',
-                background: 'rgba(15, 23, 42, 0.6)',
-                color: '#f8fafc',
-                border: '1px solid rgba(71, 85, 105, 0.4)',
-                borderRadius: '10px',
-                cursor: 'pointer',
-                fontSize: '14px'
-              }}
-            />
-            {nomeArquivo && (
-              <div style={{ marginTop: '8px', color: '#10b981', fontSize: '12px' }}>
-                ✅ {nomeArquivo}
-              </div>
-            )}
+            <label style={{
+              display: 'block',
+              padding: '12px',
+              background: '#0f172a',
+              border: '2px dashed #475569',
+              borderRadius: '8px',
+              textAlign: 'center',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.borderColor = '#3b82f6';
+              e.target.style.background = 'rgba(59, 130, 246, 0.05)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.borderColor = '#475569';
+              e.target.style.background = '#0f172a';
+            }}>
+              <input
+                type="file"
+                onChange={handleFileChange}
+                accept=".pdf,.doc,.docx"
+                style={{ display: 'none' }}
+              />
+              <span style={{ color: '#94a3b8', fontSize: '14px' }}>
+                {nomeArquivo || '📎 Clique para selecionar arquivo'}
+              </span>
+            </label>
           </div>
 
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{ color: '#cbd5e1', display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600' }}>
-              Mensagem / Observações
+          {/* Mensagem/Observações */}
+          <div>
+            <label style={{
+              color: '#cbd5e1',
+              display: 'block',
+              marginBottom: '8px',
+              fontSize: '14px',
+              fontWeight: '600'
+            }}>
+              Observações
             </label>
             <textarea
               name="mensagem"
               value={formData.mensagem}
               onChange={handleChange}
               rows={4}
-              placeholder="Informações adicionais sobre o candidato..."
+              placeholder="Observações adicionais sobre o candidato..."
               style={{
                 width: '100%',
                 padding: '12px',
-                background: 'rgba(15, 23, 42, 0.6)',
+                background: '#0f172a',
+                border: '1px solid #475569',
+                borderRadius: '8px',
                 color: '#f8fafc',
-                border: '1px solid rgba(71, 85, 105, 0.4)',
-                borderRadius: '10px',
-                resize: 'vertical',
                 fontSize: '14px',
-                fontFamily: 'inherit',
                 outline: 'none',
-                transition: 'all 0.2s ease'
+                resize: 'vertical',
+                fontFamily: 'inherit'
               }}
-              onFocus={(e) => {
-                e.target.style.borderColor = '#3b82f6';
-                e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = 'rgba(71, 85, 105, 0.4)';
-                e.target.style.boxShadow = 'none';
-              }}
+              onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
+              onBlur={(e) => e.target.style.borderColor = '#475569'}
             />
           </div>
 
-          <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+          {/* Botões */}
+          <div style={{ display: 'flex', gap: '12px', paddingTop: '8px' }}>
             <button
               type="button"
               onClick={onClose}
               disabled={carregando}
               style={{
-                padding: '12px 28px',
+                flex: 1,
+                padding: '12px',
                 background: 'rgba(71, 85, 105, 0.3)',
                 color: '#f1f5f9',
                 border: '1px solid rgba(71, 85, 105, 0.5)',
@@ -344,8 +473,7 @@ export default function ModalAdicionarCandidato({ isOpen, onClose, onCandidatoAd
                 cursor: carregando ? 'not-allowed' : 'pointer',
                 fontWeight: '600',
                 fontSize: '14px',
-                opacity: carregando ? 0.5 : 1,
-                transition: 'all 0.2s ease'
+                opacity: carregando ? 0.5 : 1
               }}
             >
               Cancelar
@@ -354,19 +482,18 @@ export default function ModalAdicionarCandidato({ isOpen, onClose, onCandidatoAd
               type="submit"
               disabled={carregando}
               style={{
-                padding: '12px 28px',
-                background: carregando 
-                  ? 'rgba(148, 163, 184, 0.3)' 
-                  : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                flex: 1,
+                padding: '12px',
+                background: carregando
+                  ? 'rgba(59, 130, 246, 0.3)'
+                  : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
                 color: 'white',
                 border: 'none',
                 borderRadius: '10px',
                 cursor: carregando ? 'not-allowed' : 'pointer',
                 fontWeight: '700',
                 fontSize: '14px',
-                opacity: carregando ? 0.6 : 1,
-                transition: 'all 0.2s ease',
-                boxShadow: carregando ? 'none' : '0 4px 12px rgba(16, 185, 129, 0.3)'
+                boxShadow: carregando ? 'none' : '0 4px 12px rgba(59, 130, 246, 0.3)'
               }}
             >
               {carregando ? '⏳ Salvando...' : '✅ Adicionar Candidato'}
@@ -374,6 +501,15 @@ export default function ModalAdicionarCandidato({ isOpen, onClose, onCandidatoAd
           </div>
         </form>
       </div>
+
+      {/* Modal de Alerta de Histórico */}
+      {alertaHistorico && (
+        <AlertaDuplicataHistorico
+          historico={alertaHistorico}
+          onClose={() => setAlertaHistorico(null)}
+          onContinuar={handleContinuarMesmoAssim}
+        />
+      )}
     </div>
   );
 }
