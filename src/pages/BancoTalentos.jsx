@@ -3,12 +3,186 @@ import { supabase } from '../config/supabase';
 import { showSuccess, showError } from '../utils/toast';
 import { handleError } from '../utils/errorHandler';
 
+// ========== MODAL DE CONFIRMAÇÃO MODERNO ==========
+function ModalConfirmacao({ isOpen, onClose, onConfirm, titulo, mensagem, tipo = 'remover', carregando }) {
+  if (!isOpen) return null;
+
+  const cores = {
+    remover: { bg: '#f59e0b', bgHover: '#d97706', texto: 'Remover' },
+    deletar: { bg: '#ef4444', bgHover: '#dc2626', texto: 'Deletar' }
+  };
+
+  const config = cores[tipo];
+
+  return (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: 'rgba(0,0,0,0.75)',
+      backdropFilter: 'blur(8px)',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 9999,
+      animation: 'fadeIn 0.2s ease-out'
+    }}>
+      <div style={{
+        background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
+        borderRadius: '16px',
+        padding: '30px',
+        maxWidth: '500px',
+        width: '90%',
+        border: `1px solid ${config.bg}40`,
+        boxShadow: `0 25px 60px ${config.bg}20`,
+        animation: 'slideUp 0.3s ease-out'
+      }}>
+        <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+          <div style={{
+            width: '64px',
+            height: '64px',
+            borderRadius: '50%',
+            background: `${config.bg}20`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 16px',
+            fontSize: '32px'
+          }}>
+            {tipo === 'deletar' ? '🗑️' : '❌'}
+          </div>
+          <h2 style={{ 
+            color: '#f8fafc', 
+            margin: '0 0 12px 0',
+            fontSize: '22px',
+            fontWeight: '700'
+          }}>
+            {titulo}
+          </h2>
+          <p style={{ 
+            color: '#94a3b8', 
+            margin: 0,
+            fontSize: '15px',
+            lineHeight: '1.6'
+          }}>
+            {mensagem}
+          </p>
+        </div>
+
+        <div style={{ 
+          display: 'flex', 
+          gap: '12px', 
+          justifyContent: 'center' 
+        }}>
+          <button
+            onClick={onClose}
+            disabled={carregando}
+            style={{
+              padding: '12px 28px',
+              background: 'rgba(71, 85, 105, 0.3)',
+              color: '#f1f5f9',
+              border: '1px solid rgba(71, 85, 105, 0.5)',
+              borderRadius: '10px',
+              cursor: carregando ? 'not-allowed' : 'pointer',
+              fontWeight: '600',
+              fontSize: '14px',
+              opacity: carregando ? 0.5 : 1,
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              if (!carregando) e.target.style.background = 'rgba(71, 85, 105, 0.5)';
+            }}
+            onMouseLeave={(e) => {
+              if (!carregando) e.target.style.background = 'rgba(71, 85, 105, 0.3)';
+            }}
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={carregando}
+            style={{
+              padding: '12px 28px',
+              background: carregando 
+                ? 'rgba(148, 163, 184, 0.3)' 
+                : `linear-gradient(135deg, ${config.bg} 0%, ${config.bgHover} 100%)`,
+              color: 'white',
+              border: 'none',
+              borderRadius: '10px',
+              cursor: carregando ? 'not-allowed' : 'pointer',
+              fontWeight: '700',
+              fontSize: '14px',
+              opacity: carregando ? 0.6 : 1,
+              transition: 'all 0.2s ease',
+              boxShadow: carregando ? 'none' : `0 4px 12px ${config.bg}40`
+            }}
+            onMouseEnter={(e) => {
+              if (!carregando) {
+                e.target.style.transform = 'translateY(-2px)';
+                e.target.style.boxShadow = `0 6px 20px ${config.bg}60`;
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!carregando) {
+                e.target.style.transform = 'translateY(0)';
+                e.target.style.boxShadow = `0 4px 12px ${config.bg}40`;
+              }
+            }}
+          >
+            {carregando ? (
+              <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{
+                  width: '14px',
+                  height: '14px',
+                  border: '2px solid rgba(255,255,255,0.3)',
+                  borderTopColor: '#fff',
+                  borderRadius: '50%',
+                  animation: 'spin 0.8s linear infinite'
+                }} />
+                Processando...
+              </span>
+            ) : `${tipo === 'deletar' ? '🗑️' : '❌'} ${config.texto}`}
+          </button>
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes slideUp {
+          from { 
+            opacity: 0; 
+            transform: translateY(20px);
+          }
+          to { 
+            opacity: 1; 
+            transform: translateY(0);
+          }
+        }
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+// ========== COMPONENTE PRINCIPAL ==========
 export default function BancoTalentos() {
   const [talentos, setTalentos] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [talentoExpandido, setTalentoExpandido] = useState(null);
   const [filtroSetor, setFiltroSetor] = useState('todos');
   const [busca, setBusca] = useState('');
+  
+  // Estados dos modais
+  const [modalRemover, setModalRemover] = useState({ isOpen: false, candidatoId: null });
+  const [modalDeletar, setModalDeletar] = useState({ isOpen: false, candidatoId: null });
+  const [processando, setProcessando] = useState(false);
 
   useEffect(() => {
     fetchTalentos();
@@ -40,8 +214,7 @@ export default function BancoTalentos() {
   };
 
   const removerDoTalentos = async (id) => {
-    if (!window.confirm('Remover este candidato do banco de talentos?')) return;
-    
+    setProcessando(true);
     try {
       const { error } = await supabase
         .from('candidatos')
@@ -55,15 +228,17 @@ export default function BancoTalentos() {
       if (error) throw error;
 
       showSuccess('✅ Removido do banco de talentos!');
+      setModalRemover({ isOpen: false, candidatoId: null });
       fetchTalentos();
     } catch (err) {
       handleError(err, 'Erro ao remover do banco');
+    } finally {
+      setProcessando(false);
     }
   };
 
   const deletarCandidato = async (id) => {
-    if (!window.confirm('⚠️ ATENÇÃO: Deseja deletar este candidato PERMANENTEMENTE do sistema?\n\nEsta ação não pode ser desfeita!')) return;
-    
+    setProcessando(true);
     try {
       const { error } = await supabase
         .from('candidatos')
@@ -73,9 +248,12 @@ export default function BancoTalentos() {
       if (error) throw error;
 
       showSuccess('🗑️ Candidato deletado permanentemente!');
+      setModalDeletar({ isOpen: false, candidatoId: null });
       fetchTalentos();
     } catch (err) {
       handleError(err, 'Erro ao deletar candidato');
+    } finally {
+      setProcessando(false);
     }
   };
 
@@ -91,7 +269,6 @@ export default function BancoTalentos() {
     window.open(url, '_blank');
   };
 
-  // Filtrar por busca local
   const talentosFiltrados = talentos.filter(talento => {
     if (!busca) return true;
     const termo = busca.toLowerCase();
@@ -158,7 +335,6 @@ export default function BancoTalentos() {
         </div>
 
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-          {/* Campo de Busca */}
           <input
             type="text"
             placeholder="🔍 Buscar por nome, email ou cargo..."
@@ -175,7 +351,6 @@ export default function BancoTalentos() {
             }}
           />
 
-          {/* Filtro por Setor */}
           <select
             value={filtroSetor}
             onChange={(e) => setFiltroSetor(e.target.value)}
@@ -344,7 +519,7 @@ export default function BancoTalentos() {
                   )}
 
                   <button
-                    onClick={() => removerDoTalentos(talento.id)}
+                    onClick={() => setModalRemover({ isOpen: true, candidatoId: talento.id })}
                     style={{
                       background: '#f59e0b',
                       color: '#fff',
@@ -364,7 +539,7 @@ export default function BancoTalentos() {
                   </button>
 
                   <button
-                    onClick={() => deletarCandidato(talento.id)}
+                    onClick={() => setModalDeletar({ isOpen: true, candidatoId: talento.id })}
                     style={{
                       background: '#ef4444',
                       color: '#fff',
@@ -460,6 +635,28 @@ export default function BancoTalentos() {
           ))}
         </div>
       )}
+
+      {/* Modal Remover */}
+      <ModalConfirmacao
+        isOpen={modalRemover.isOpen}
+        onClose={() => setModalRemover({ isOpen: false, candidatoId: null })}
+        onConfirm={() => removerDoTalentos(modalRemover.candidatoId)}
+        titulo="Remover do Banco de Talentos?"
+        mensagem="Este candidato será removido do banco de talentos, mas continuará no sistema."
+        tipo="remover"
+        carregando={processando}
+      />
+
+      {/* Modal Deletar */}
+      <ModalConfirmacao
+        isOpen={modalDeletar.isOpen}
+        onClose={() => setModalDeletar({ isOpen: false, candidatoId: null })}
+        onConfirm={() => deletarCandidato(modalDeletar.candidatoId)}
+        titulo="Deletar Candidato Permanentemente?"
+        mensagem="⚠️ ATENÇÃO: Esta ação é irreversível! O candidato será completamente removido do sistema."
+        tipo="deletar"
+        carregando={processando}
+      />
     </div>
   );
 }
