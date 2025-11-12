@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../config/supabase';
+import { showSuccess, showError } from '../utils/toast';
+import { handleError } from '../utils/errorHandler';
 
 export default function BancoTalentos() {
   const [talentos, setTalentos] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [talentoExpandido, setTalentoExpandido] = useState(null);
   const [filtroSetor, setFiltroSetor] = useState('todos');
+  const [busca, setBusca] = useState('');
 
   useEffect(() => {
     fetchTalentos();
@@ -25,47 +28,54 @@ export default function BancoTalentos() {
       }
 
       const { data, error } = await query;
-      if (!error) {
-        setTalentos(data || []);
-      }
+
+      if (error) throw error;
+      
+      setTalentos(data || []);
     } catch (err) {
-      console.error('Erro ao buscar talentos:', err);
+      handleError(err, 'Erro ao buscar talentos');
+    } finally {
+      setCarregando(false);
     }
-    setCarregando(false);
   };
 
   const removerDoTalentos = async (id) => {
-    if (window.confirm('Remover este candidato do banco de talentos?')) {
+    if (!window.confirm('Remover este candidato do banco de talentos?')) return;
+    
+    try {
       const { error } = await supabase
         .from('candidatos')
         .update({ 
-          banco_talentos: false,
+          banco_talentos: false, 
           setor_interesse: null,
-          observacoes_talentos: null
+          observacoes_talentos: null 
         })
         .eq('id', id);
-      
-      if (!error) {
-        fetchTalentos();
-        alert('Removido do banco de talentos!');
-      }
+
+      if (error) throw error;
+
+      showSuccess('✅ Removido do banco de talentos!');
+      fetchTalentos();
+    } catch (err) {
+      handleError(err, 'Erro ao remover do banco');
     }
   };
 
-  // ← NOVO: Função para deletar candidato definitivamente
   const deletarCandidato = async (id) => {
-    if (window.confirm('⚠️ ATENÇÃO: Deseja deletar este candidato PERMANENTEMENTE do sistema?\n\nEsta ação não pode ser desfeita!')) {
+    if (!window.confirm('⚠️ ATENÇÃO: Deseja deletar este candidato PERMANENTEMENTE do sistema?\n\nEsta ação não pode ser desfeita!')) return;
+    
+    try {
       const { error } = await supabase
         .from('candidatos')
         .delete()
         .eq('id', id);
-      
-      if (!error) {
-        fetchTalentos();
-        alert('Candidato deletado permanentemente!');
-      } else {
-        alert('Erro ao deletar candidato.');
-      }
+
+      if (error) throw error;
+
+      showSuccess('🗑️ Candidato deletado permanentemente!');
+      fetchTalentos();
+    } catch (err) {
+      handleError(err, 'Erro ao deletar candidato');
     }
   };
 
@@ -75,20 +85,58 @@ export default function BancoTalentos() {
 
   const downloadCurriculo = (url) => {
     if (!url) {
-      alert('Currículo não disponível');
+      showError('❌ Currículo não disponível');
       return;
     }
     window.open(url, '_blank');
   };
 
+  // Filtrar por busca local
+  const talentosFiltrados = talentos.filter(talento => {
+    if (!busca) return true;
+    const termo = busca.toLowerCase();
+    return (
+      talento.nome_completo.toLowerCase().includes(termo) ||
+      talento.Email.toLowerCase().includes(termo) ||
+      talento.cargo_pretendido.toLowerCase().includes(termo)
+    );
+  });
+
   if (carregando) {
-    return <div style={{ textAlign: 'center', padding: '20px', color: '#cbd5e1' }}>Carregando...</div>;
+    return (
+      <div style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>
+        <div style={{
+          width: '40px',
+          height: '40px',
+          border: '4px solid #334155',
+          borderTop: '4px solid #f59e0b',
+          borderRadius: '50%',
+          animation: 'spin 1s linear infinite',
+          margin: '0 auto 15px'
+        }} />
+        <p>Carregando banco de talentos...</p>
+      </div>
+    );
   }
 
   return (
     <div style={{ padding: '20px' }}>
-      <div style={{ marginBottom: '30px' }}>
-        <h2 style={{ color: '#f8fafc', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+      {/* Header */}
+      <div style={{ 
+        background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
+        padding: '25px',
+        borderRadius: '12px',
+        marginBottom: '25px',
+        border: '1px solid #334155'
+      }}>
+        <h2 style={{ 
+          color: '#f8fafc', 
+          marginBottom: '10px', 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '10px',
+          fontSize: '24px'
+        }}>
           ⭐ Banco de Talentos
         </h2>
         <p style={{ color: '#94a3b8', fontSize: '14px' }}>
@@ -96,224 +144,315 @@ export default function BancoTalentos() {
         </p>
       </div>
 
-      {/* Filtro por Setor */}
-      <div style={{ marginBottom: '20px' }}>
-        <label style={{ display: 'block', marginBottom: '8px', color: '#cbd5e1', fontWeight: 'bold' }}>
-          Filtrar por Setor:
-        </label>
-        <select
-          value={filtroSetor}
-          onChange={(e) => setFiltroSetor(e.target.value)}
-          style={{
-            padding: '10px',
-            borderRadius: '6px',
-            border: '1px solid #475569',
-            backgroundColor: '#334155',
-            color: '#f8fafc',
-            fontSize: '14px',
-            minWidth: '200px'
-          }}
-        >
-          <option value="todos">Todos os Setores</option>
-          <option value="Contabilidade">Contabilidade</option>
-          <option value="Fiscal">Fiscal</option>
-          <option value="RH">RH</option>
-          <option value="TI">TI</option>
-          <option value="Administrativo">Administrativo</option>
-          <option value="Financeiro">Financeiro</option>
-          <option value="Comercial">Comercial</option>
-          <option value="Atendimento">Atendimento</option>
-          <option value="Outro">Outro</option>
-        </select>
+      {/* Filtros e Busca */}
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center',
+        marginBottom: '20px',
+        flexWrap: 'wrap',
+        gap: '15px'
+      }}>
+        <div style={{ color: '#cbd5e1', fontSize: '15px' }}>
+          <strong style={{ color: '#f59e0b' }}>{talentosFiltrados.length}</strong> talento{talentosFiltrados.length !== 1 ? 's' : ''} encontrado{talentosFiltrados.length !== 1 ? 's' : ''}
+        </div>
+
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          {/* Campo de Busca */}
+          <input
+            type="text"
+            placeholder="🔍 Buscar por nome, email ou cargo..."
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            style={{
+              background: '#334155',
+              color: '#f8fafc',
+              border: '1px solid #475569',
+              padding: '10px 15px',
+              borderRadius: '6px',
+              minWidth: '250px',
+              fontSize: '14px'
+            }}
+          />
+
+          {/* Filtro por Setor */}
+          <select
+            value={filtroSetor}
+            onChange={(e) => setFiltroSetor(e.target.value)}
+            style={{
+              background: '#334155',
+              color: '#f8fafc',
+              border: '1px solid #475569',
+              padding: '10px 15px',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '14px'
+            }}
+          >
+            <option value="todos">📁 Todos os setores</option>
+            <option value="TI">💻 TI</option>
+            <option value="RH">👥 RH</option>
+            <option value="Financeiro">💰 Financeiro</option>
+            <option value="Comercial">📊 Comercial</option>
+            <option value="Operações">⚙️ Operações</option>
+            <option value="Marketing">📢 Marketing</option>
+            <option value="Administrativo">📋 Administrativo</option>
+          </select>
+        </div>
       </div>
 
-      {/* Contador */}
-      <div style={{ marginBottom: '20px' }}>
-        <p style={{ color: '#94a3b8', fontSize: '14px' }}>
-          {talentos.length} talento(s) encontrado(s)
-        </p>
-      </div>
-
-      {talentos.length === 0 ? (
+      {/* Lista de Talentos */}
+      {talentosFiltrados.length === 0 ? (
         <div style={{ 
           textAlign: 'center', 
-          padding: '50px', 
-          color: '#64748b',
-          backgroundColor: '#1e293b',
+          padding: '60px 20px',
+          background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
           borderRadius: '12px',
-          border: '1px dashed #334155'
+          border: '1px solid #334155'
         }}>
-          <p style={{ fontSize: '48px', marginBottom: '10px' }}>⭐</p>
-          <p style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '5px', color: '#cbd5e1' }}>
-            Nenhum talento no banco
-          </p>
-          <p style={{ fontSize: '14px' }}>
-            Adicione candidatos promissores clicando na estrela
+          <div style={{ fontSize: '48px', marginBottom: '15px' }}>
+            {busca ? '🔍' : '📭'}
+          </div>
+          <h3 style={{ color: '#f8fafc', marginBottom: '10px' }}>
+            {busca ? 'Nenhum talento encontrado' : 'Nenhum talento no banco'}
+          </h3>
+          <p style={{ color: '#94a3b8' }}>
+            {busca 
+              ? 'Tente buscar com outros termos'
+              : 'Adicione candidatos promissores clicando na estrela ⭐'
+            }
           </p>
         </div>
       ) : (
         <div style={{ display: 'grid', gap: '15px' }}>
-          {talentos.map(talento => (
-            <div key={talento.id} style={{
-              border: '1px solid #f59e0b',
-              borderRadius: '8px',
-              backgroundColor: '#1e293b',
-              overflow: 'hidden'
-            }}>
-              {/* Card Header */}
-              <div 
-                onClick={() => toggleExpand(talento.id)}
-                style={{ 
-                  display: 'flex', 
-                  justifyContent: 'space-between', 
-                  alignItems: 'center',
-                  padding: '15px 20px',
-                  cursor: 'pointer',
-                  transition: 'background-color 0.2s',
-                  backgroundColor: talentoExpandido === talento.id ? '#334155' : 'transparent'
-                }}
-              >
+          {talentosFiltrados.map((talento) => (
+            <div
+              key={talento.id}
+              style={{
+                background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
+                padding: '20px',
+                borderRadius: '12px',
+                border: '1px solid #475569',
+                transition: 'all 0.3s ease',
+                cursor: 'pointer'
+              }}
+              onClick={() => toggleExpand(talento.id)}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.border = '1px solid #f59e0b';
+                e.currentTarget.style.boxShadow = '0 4px 20px rgba(245, 158, 11, 0.2)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.border = '1px solid #475569';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: '15px' }}>
                 <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '5px' }}>
-                    <span style={{ fontSize: '20px' }}>⭐</span>
-                    <h3 style={{ margin: 0, color: '#f8fafc', fontSize: '18px' }}>
-                      {talento.nome_completo}
-                    </h3>
-                  </div>
-                  <div style={{ fontSize: '13px', color: '#94a3b8' }}>
-                    <span>💼 {talento.cargo_pretendido}</span>
+                  <h3 style={{ 
+                    color: '#f8fafc', 
+                    marginBottom: '8px', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '8px',
+                    fontSize: '18px',
+                    fontWeight: '600'
+                  }}>
+                    ⭐ {talento.nome_completo}
+                  </h3>
+                  <p style={{ 
+                    color: '#94a3b8', 
+                    fontSize: '14px', 
+                    marginBottom: '10px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}>
+                    📧 {talento.Email}
+                  </p>
+                  {talento.telefone && (
+                    <p style={{ 
+                      color: '#94a3b8', 
+                      fontSize: '14px', 
+                      marginBottom: '10px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}>
+                      📱 {talento.telefone}
+                    </p>
+                  )}
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    <span style={{
+                      background: '#f59e0b',
+                      color: '#fff',
+                      padding: '5px 12px',
+                      borderRadius: '16px',
+                      fontSize: '12px',
+                      fontWeight: 'bold'
+                    }}>
+                      💼 {talento.cargo_pretendido}
+                    </span>
                     {talento.setor_interesse && (
-                      <span style={{ 
-                        marginLeft: '10px',
-                        padding: '2px 8px',
-                        backgroundColor: '#f59e0b',
-                        borderRadius: '4px',
-                        fontSize: '11px',
-                        fontWeight: 'bold',
-                        color: 'white'
+                      <span style={{
+                        background: '#3b82f6',
+                        color: '#fff',
+                        padding: '5px 12px',
+                        borderRadius: '16px',
+                        fontSize: '12px',
+                        fontWeight: '600'
                       }}>
-                        {talento.setor_interesse}
+                        📁 {talento.setor_interesse}
+                      </span>
+                    )}
+                    {talento.score && (
+                      <span style={{
+                        background: talento.score >= 7 ? '#10b981' : talento.score >= 5 ? '#f59e0b' : '#ef4444',
+                        color: '#fff',
+                        padding: '5px 12px',
+                        borderRadius: '16px',
+                        fontSize: '12px',
+                        fontWeight: 'bold'
+                      }}>
+                        ⭐ Score: {talento.score}/10
                       </span>
                     )}
                   </div>
                 </div>
-                
-                <span style={{ fontSize: '20px', color: '#94a3b8' }}>
-                  {talentoExpandido === talento.id ? '▲' : '▼'}
-                </span>
+
+                {/* Botões de Ação */}
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }} onClick={(e) => e.stopPropagation()}>
+                  {talento.curriculo_url && (
+                    <button
+                      onClick={() => downloadCurriculo(talento.curriculo_url)}
+                      style={{
+                        background: '#3b82f6',
+                        color: '#fff',
+                        border: 'none',
+                        padding: '9px 16px',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        transition: 'all 0.2s ease',
+                        whiteSpace: 'nowrap'
+                      }}
+                      onMouseEnter={(e) => e.target.style.background = '#2563eb'}
+                      onMouseLeave={(e) => e.target.style.background = '#3b82f6'}
+                    >
+                      📄 Currículo
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => removerDoTalentos(talento.id)}
+                    style={{
+                      background: '#f59e0b',
+                      color: '#fff',
+                      border: 'none',
+                      padding: '9px 16px',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      transition: 'all 0.2s ease',
+                      whiteSpace: 'nowrap'
+                    }}
+                    onMouseEnter={(e) => e.target.style.background = '#d97706'}
+                    onMouseLeave={(e) => e.target.style.background = '#f59e0b'}
+                  >
+                    ❌ Remover
+                  </button>
+
+                  <button
+                    onClick={() => deletarCandidato(talento.id)}
+                    style={{
+                      background: '#ef4444',
+                      color: '#fff',
+                      border: 'none',
+                      padding: '9px 16px',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      transition: 'all 0.2s ease',
+                      whiteSpace: 'nowrap'
+                    }}
+                    onMouseEnter={(e) => e.target.style.background = '#dc2626'}
+                    onMouseLeave={(e) => e.target.style.background = '#ef4444'}
+                  >
+                    🗑️ Deletar
+                  </button>
+                </div>
               </div>
 
               {/* Detalhes Expandidos */}
               {talentoExpandido === talento.id && (
                 <div style={{ 
-                  padding: '20px', 
-                  borderTop: '1px solid #334155'
+                  marginTop: '20px', 
+                  paddingTop: '20px', 
+                  borderTop: '1px solid #475569',
+                  color: '#cbd5e1'
                 }}>
-                  <div style={{ display: 'grid', gap: '15px' }}>
-                    {/* Contato */}
-                    <div>
-                      <strong style={{ color: '#f8fafc' }}>Contato:</strong>
-                      <div style={{ marginTop: '5px', color: '#cbd5e1', fontSize: '14px' }}>
-                        <div>📧 {talento.Email}</div>
-                        {talento.telefone && <div>📱 {talento.telefone}</div>}
-                      </div>
-                    </div>
-
-                    {/* ← NOVO: LinkedIn */}
-                    {talento.linkedin_url && (
-                      <div>
-                        <strong style={{ color: '#f8fafc' }}>LinkedIn:</strong>
-                        <div style={{ marginTop: '5px' }}>
-                          <a 
-                            href={talento.linkedin_url} 
-                            target="_blank" 
-                            rel="noopener noreferrer" 
-                            style={{ 
-                              color: '#f59e0b',
-                              textDecoration: 'none',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '5px'
-                            }}
-                          >
-                            🔗 Ver perfil no LinkedIn
-                          </a>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Mensagem */}
-                    {talento.mensagem && (
-                      <div>
-                        <strong style={{ color: '#f8fafc' }}>Mensagem Original:</strong>
-                        <p style={{ color: '#cbd5e1', marginTop: '5px', whiteSpace: 'pre-wrap', fontSize: '14px' }}>
-                          {talento.mensagem}
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Observações */}
-                    {talento.observacoes_talentos && (
-                      <div>
-                        <strong style={{ color: '#f8fafc' }}>Observações do Banco de Talentos:</strong>
-                        <p style={{ color: '#cbd5e1', marginTop: '5px', whiteSpace: 'pre-wrap', fontSize: '14px' }}>
-                          {talento.observacoes_talentos}
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Ações */}
+                  {talento.mensagem && (
                     <div style={{ 
-                      display: 'flex', 
-                      gap: '10px', 
-                      paddingTop: '15px', 
-                      borderTop: '1px solid #334155',
-                      flexWrap: 'wrap'
+                      marginBottom: '15px',
+                      padding: '15px',
+                      background: 'rgba(59, 130, 246, 0.1)',
+                      borderLeft: '3px solid #3b82f6',
+                      borderRadius: '6px'
                     }}>
-                      <button
-                        onClick={() => downloadCurriculo(talento.curriculo_url)}
-                        style={{
-                          padding: '8px 15px',
-                          backgroundColor: '#10b981',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '4px',
-                          cursor: 'pointer',
-                          fontSize: '14px'
-                        }}
-                      >
-                        📄 Ver Currículo
-                      </button>
-                      <button
-                        onClick={() => removerDoTalentos(talento.id)}
-                        style={{
-                          padding: '8px 15px',
-                          backgroundColor: '#6c757d',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '4px',
-                          cursor: 'pointer',
-                          fontSize: '14px'
-                        }}
-                      >
-                        ❌ Remover do Banco
-                      </button>
-                      {/* ← NOVO: Botão de deletar permanentemente */}
-                      <button
-                        onClick={() => deletarCandidato(talento.id)}
-                        style={{
-                          padding: '8px 15px',
-                          backgroundColor: '#dc2626',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '4px',
-                          cursor: 'pointer',
-                          fontSize: '14px'
-                        }}
-                      >
-                        🗑️ Deletar Permanentemente
-                      </button>
+                      <strong style={{ display: 'block', marginBottom: '8px', color: '#3b82f6' }}>
+                        💬 Mensagem do Candidato:
+                      </strong>
+                      <p style={{ color: '#cbd5e1', fontSize: '14px', lineHeight: '1.6' }}>
+                        {talento.mensagem}
+                      </p>
                     </div>
+                  )}
+                  
+                  {talento.observacoes_talentos && (
+                    <div style={{ 
+                      padding: '15px',
+                      background: 'rgba(245, 158, 11, 0.1)',
+                      borderLeft: '3px solid #f59e0b',
+                      borderRadius: '6px'
+                    }}>
+                      <strong style={{ display: 'block', marginBottom: '8px', color: '#f59e0b' }}>
+                        📝 Observações do Banco:
+                      </strong>
+                      <p style={{ color: '#cbd5e1', fontSize: '14px', lineHeight: '1.6' }}>
+                        {talento.observacoes_talentos}
+                      </p>
+                    </div>
+                  )}
+
+                  {talento.linkedin_url && (
+                    <div style={{ marginTop: '15px' }}>
+                      <a
+                        href={talento.linkedin_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          color: '#3b82f6',
+                          textDecoration: 'none',
+                          fontSize: '14px',
+                          fontWeight: '600'
+                        }}
+                      >
+                        🔗 Ver LinkedIn
+                      </a>
+                    </div>
+                  )}
+
+                  <div style={{ marginTop: '15px', fontSize: '12px', color: '#64748b' }}>
+                    Adicionado em: {new Date(talento.criado_em).toLocaleDateString('pt-BR', {
+                      day: '2-digit',
+                      month: 'long',
+                      year: 'numeric'
+                    })}
                   </div>
                 </div>
               )}

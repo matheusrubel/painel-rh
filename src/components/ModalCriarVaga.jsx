@@ -1,5 +1,8 @@
 import { useState } from 'react';
 import { supabase } from '../config/supabase';
+import { vagaSchema } from '../schemas/vagaSchema'; // ✅ NOVO
+import { showSuccess, showError } from '../utils/toast'; // ✅ NOVO
+import { handleError } from '../utils/errorHandler'; // ✅ NOVO
 
 export default function ModalCriarVaga({ isOpen, onClose, onVagaCriada }) {
   const [formData, setFormData] = useState({
@@ -22,58 +25,47 @@ export default function ModalCriarVaga({ isOpen, onClose, onVagaCriada }) {
     setCarregando(true);
 
     try {
-      const vagaData = {
-        titulo: formData.titulo,
-        descricao: formData.descricao,
-        atribuicoes: formData.atribuicoes.split('\n').filter(a => a.trim()),
-        beneficios: formData.beneficios.split('\n').filter(b => b.trim()),
-        requisitos: formData.requisitos.split('\n').filter(r => r.trim()),
-        local: formData.local,
+      // ✅ NOVO: Validar dados com Zod
+      const dadosValidados = vagaSchema.parse(formData);
+
+      const { error } = await supabase.from('vagas').insert([{
+        ...dadosValidados,
         ativa: true
-      };
+      }]);
 
-      const { error } = await supabase.from('vagas').insert([vagaData]);
+      if (error) throw error;
 
-      if (error) {
-        alert('Erro ao criar vaga: ' + error.message);
-      } else {
-        alert('Vaga criada com sucesso!');
-        setFormData({
-          titulo: '',
-          descricao: '',
-          atribuicoes: '',
-          beneficios: '',
-          requisitos: '',
-          local: ''
-        });
+      showSuccess('✅ Vaga criada com sucesso!'); // ✅ MUDOU
+
+      // Limpar formulário
+      setFormData({
+        titulo: '',
+        descricao: '',
+        atribuicoes: '',
+        beneficios: '',
+        requisitos: '',
+        local: ''
+      });
+
+      if (onVagaCriada) {
         onVagaCriada();
-        onClose();
       }
+
+      onClose();
     } catch (err) {
-      alert('Erro: ' + err.message);
+      // ✅ NOVO: Tratamento especial para erros Zod
+      if (err.name === 'ZodError') {
+        const primeiroErro = err.errors[0];
+        showError(primeiroErro.message);
+      } else {
+        handleError(err, 'Erro ao criar vaga');
+      }
+    } finally {
+      setCarregando(false);
     }
-    setCarregando(false);
   };
 
   if (!isOpen) return null;
-
-  const labelStyle = { 
-    color: '#cbd5e1', 
-    display: 'block', 
-    marginBottom: '5px', 
-    fontWeight: 'bold' 
-  };
-  
-  const inputStyle = { 
-    width: '100%', 
-    padding: '10px', 
-    border: '1px solid #475569', 
-    boxSizing: 'border-box', 
-    borderRadius: '6px',
-    backgroundColor: '#334155',
-    color: '#f8fafc',
-    fontSize: '14px'
-  };
 
   return (
     <div style={{
@@ -82,7 +74,7 @@ export default function ModalCriarVaga({ isOpen, onClose, onVagaCriada }) {
       left: 0,
       right: 0,
       bottom: 0,
-      backgroundColor: 'rgba(0,0,0,0.8)',
+      background: 'rgba(0,0,0,0.7)',
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',
@@ -90,140 +82,196 @@ export default function ModalCriarVaga({ isOpen, onClose, onVagaCriada }) {
       overflowY: 'auto'
     }}>
       <div style={{
-        backgroundColor: '#1e293b',
+        background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
         padding: '30px',
         borderRadius: '12px',
-        maxWidth: '600px',
+        maxWidth: '700px',
         width: '90%',
-        boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
-        border: '1px solid #334155',
         maxHeight: '90vh',
         overflowY: 'auto',
-        margin: '20px'
+        border: '1px solid #475569',
+        margin: '20px 0'
       }}>
-        <h2 style={{ marginBottom: '20px', color: '#f8fafc' }}>Criar Nova Vaga</h2>
+        <h2 style={{ color: '#f8fafc', marginBottom: '20px' }}>
+          📝 Criar Nova Vaga
+        </h2>
+
         <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: '15px' }}>
-            <label style={labelStyle}>Título da Vaga *</label>
+          {/* Título */}
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ color: '#cbd5e1', display: 'block', marginBottom: '8px' }}>
+              Título da Vaga *
+            </label>
             <input
               type="text"
               name="titulo"
               value={formData.titulo}
               onChange={handleChange}
-              placeholder="Ex: Analista de Dados"
               required
-              style={inputStyle}
+              placeholder="Ex: Desenvolvedor Full Stack Sênior"
+              style={{
+                width: '100%',
+                padding: '10px',
+                background: '#334155',
+                color: '#f8fafc',
+                border: '1px solid #475569',
+                borderRadius: '6px'
+              }}
             />
           </div>
 
-          <div style={{ marginBottom: '15px' }}>
-            <label style={labelStyle}>Descrição</label>
-            <textarea
-              name="descricao"
-              value={formData.descricao}
-              onChange={handleChange}
-              placeholder="Descrição geral da vaga..."
-              style={{ ...inputStyle, minHeight: '80px', fontFamily: 'inherit', resize: 'vertical' }}
-            />
-          </div>
-
-          <div style={{ marginBottom: '15px' }}>
-            <label style={labelStyle}>Atribuições (uma por linha)</label>
-            <textarea
-              name="atribuicoes"
-              value={formData.atribuicoes}
-              onChange={handleChange}
-              placeholder="Análise de dados&#10;Automações&#10;Integração de sistemas"
-              style={{ ...inputStyle, minHeight: '100px', fontFamily: 'inherit', resize: 'vertical' }}
-            />
-          </div>
-
-          <div style={{ marginBottom: '15px' }}>
-            <label style={labelStyle}>Benefícios (um por linha)</label>
-            <textarea
-              name="beneficios"
-              value={formData.beneficios}
-              onChange={handleChange}
-              placeholder="Plano de carreira&#10;Unimed&#10;VR e VT"
-              style={{ ...inputStyle, minHeight: '100px', fontFamily: 'inherit', resize: 'vertical' }}
-            />
-          </div>
-
-          <div style={{ marginBottom: '15px' }}>
-            <label style={labelStyle}>Requisitos (um por linha)</label>
-            <textarea
-              name="requisitos"
-              value={formData.requisitos}
-              onChange={handleChange}
-              placeholder="Ensino superior completo&#10;Experiência com Python&#10;Conhecimento em SQL"
-              style={{ ...inputStyle, minHeight: '100px', fontFamily: 'inherit', resize: 'vertical' }}
-            />
-          </div>
-
+          {/* Local */}
           <div style={{ marginBottom: '20px' }}>
-            <label style={labelStyle}>Local</label>
+            <label style={{ color: '#cbd5e1', display: 'block', marginBottom: '8px' }}>
+              Local *
+            </label>
             <input
               type="text"
               name="local"
               value={formData.local}
               onChange={handleChange}
-              placeholder="Ex: São Paulo - Híbrido"
-              style={inputStyle}
+              required
+              placeholder="Ex: São Paulo - SP (Híbrido)"
+              style={{
+                width: '100%',
+                padding: '10px',
+                background: '#334155',
+                color: '#f8fafc',
+                border: '1px solid #475569',
+                borderRadius: '6px'
+              }}
             />
           </div>
 
-          <div style={{ display: 'flex', gap: '10px' }}>
+          {/* Descrição */}
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ color: '#cbd5e1', display: 'block', marginBottom: '8px' }}>
+              Descrição da Vaga
+            </label>
+            <textarea
+              name="descricao"
+              value={formData.descricao}
+              onChange={handleChange}
+              rows={3}
+              placeholder="Descreva brevemente a vaga e o contexto da empresa..."
+              style={{
+                width: '100%',
+                padding: '10px',
+                background: '#334155',
+                color: '#f8fafc',
+                border: '1px solid #475569',
+                borderRadius: '6px',
+                resize: 'vertical'
+              }}
+            />
+          </div>
+
+          {/* Atribuições */}
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ color: '#cbd5e1', display: 'block', marginBottom: '8px' }}>
+              Atribuições e Responsabilidades * (uma por linha)
+            </label>
+            <textarea
+              name="atribuicoes"
+              value={formData.atribuicoes}
+              onChange={handleChange}
+              required
+              rows={5}
+              placeholder="Desenvolver aplicações web&#10;Participar de code reviews&#10;Trabalhar em equipe ágil..."
+              style={{
+                width: '100%',
+                padding: '10px',
+                background: '#334155',
+                color: '#f8fafc',
+                border: '1px solid #475569',
+                borderRadius: '6px',
+                resize: 'vertical'
+              }}
+            />
+            <small style={{ color: '#94a3b8', fontSize: '12px' }}>
+              Cada linha será convertida em um item da lista
+            </small>
+          </div>
+
+          {/* Requisitos */}
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ color: '#cbd5e1', display: 'block', marginBottom: '8px' }}>
+              Requisitos e Qualificações * (uma por linha)
+            </label>
+            <textarea
+              name="requisitos"
+              value={formData.requisitos}
+              onChange={handleChange}
+              required
+              rows={5}
+              placeholder="Experiência com React&#10;Conhecimento em Node.js&#10;Inglês intermediário..."
+              style={{
+                width: '100%',
+                padding: '10px',
+                background: '#334155',
+                color: '#f8fafc',
+                border: '1px solid #475569',
+                borderRadius: '6px',
+                resize: 'vertical'
+              }}
+            />
+          </div>
+
+          {/* Benefícios */}
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ color: '#cbd5e1', display: 'block', marginBottom: '8px' }}>
+              Benefícios (uma por linha)
+            </label>
+            <textarea
+              name="beneficios"
+              value={formData.beneficios}
+              onChange={handleChange}
+              rows={4}
+              placeholder="Vale refeição&#10;Plano de saúde&#10;Home office flexível..."
+              style={{
+                width: '100%',
+                padding: '10px',
+                background: '#334155',
+                color: '#f8fafc',
+                border: '1px solid #475569',
+                borderRadius: '6px',
+                resize: 'vertical'
+              }}
+            />
+          </div>
+
+          {/* Botões */}
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={carregando}
+              style={{
+                padding: '12px 24px',
+                background: '#475569',
+                color: '#f8fafc',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: carregando ? 'not-allowed' : 'pointer',
+                opacity: carregando ? 0.6 : 1
+              }}
+            >
+              Cancelar
+            </button>
             <button
               type="submit"
               disabled={carregando}
               style={{
-                padding: '12px 20px',
-                background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                color: 'white',
+                padding: '12px 24px',
+                background: carregando ? '#334155' : '#10b981',
+                color: '#fff',
                 border: 'none',
                 borderRadius: '6px',
                 cursor: carregando ? 'not-allowed' : 'pointer',
-                flex: 1,
-                fontWeight: 'bold',
-                fontSize: '14px',
-                opacity: carregando ? 0.7 : 1,
-                transition: 'all 0.3s'
-              }}
-              onMouseEnter={(e) => {
-                if (!carregando) {
-                  e.target.style.transform = 'translateY(-2px)';
-                  e.target.style.boxShadow = '0 6px 20px rgba(245, 158, 11, 0.4)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.transform = 'translateY(0)';
-                e.target.style.boxShadow = 'none';
+                fontWeight: 'bold'
               }}
             >
-              {carregando ? 'Criando...' : 'Criar Vaga'}
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              style={{
-                padding: '12px 20px',
-                backgroundColor: '#475569',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                flex: 1,
-                fontSize: '14px',
-                transition: 'all 0.3s'
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.backgroundColor = '#64748b';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.backgroundColor = '#475569';
-              }}
-            >
-              Cancelar
+              {carregando ? '⏳ Criando...' : '✅ Criar Vaga'}
             </button>
           </div>
         </form>

@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../config/supabase';
 import ModalDetalhesEtapa from './ModalDetalhesEtapa';
+import { showSuccess, showError } from '../utils/toast'; // ✅ NOVO
+import { handleError } from '../utils/errorHandler'; // ✅ NOVO
 import {
   DndContext,
   DragOverlay,
@@ -10,7 +12,6 @@ import {
   closestCorners
 } from '@dnd-kit/core';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
-
 
 const ETAPAS = [
   { id: 'triagem', nome: 'Triagem', cor: '#3b82f6', icone: '📋' },
@@ -23,7 +24,7 @@ const ETAPAS = [
   { id: 'reprovado', nome: 'Reprovado', cor: '#ef4444', icone: '❌' }
 ];
 
-// ========== MODAL DE REPROVAÇÃO ==========
+// ========== MODAL DE REPROVAÇÃO (DESIGN MODERNO E SUAVE) ==========
 function ModalReprovacao({ isOpen, onClose, onConfirm, candidato }) {
   const [motivoReprovacao, setMotivoReprovacao] = useState('');
   const [adicionarTalentos, setAdicionarTalentos] = useState(false);
@@ -35,12 +36,12 @@ function ModalReprovacao({ isOpen, onClose, onConfirm, candidato }) {
     e.preventDefault();
     
     if (!motivoReprovacao.trim()) {
-      alert('⚠️ O motivo da reprovação é obrigatório!');
+      showError('⚠️ O motivo da reprovação é obrigatório!'); // ✅ MUDOU
       return;
     }
 
     if (adicionarTalentos && !setorTalentos) {
-      alert('⚠️ Selecione o setor de interesse para o Banco de Talentos!');
+      showError('⚠️ Selecione o setor de interesse para o Banco de Talentos!'); // ✅ MUDOU
       return;
     }
 
@@ -76,25 +77,28 @@ function ModalReprovacao({ isOpen, onClose, onConfirm, candidato }) {
         right: 0,
         bottom: 0,
         backgroundColor: 'rgba(0, 0, 0, 0.75)',
+        backdropFilter: 'blur(8px)', // ✅ NOVO: Blur suave
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
         zIndex: 9999,
-        padding: '20px'
+        padding: '20px',
+        animation: 'fadeIn 0.2s ease-out' // ✅ NOVO: Animação suave
       }}
       onClick={handleClose}
     >
       <div 
         style={{
           backgroundColor: '#1e293b',
-          borderRadius: '12px',
-          padding: '30px',
+          borderRadius: '16px', // ✅ Mais arredondado
+          padding: '32px',
           maxWidth: '600px',
           width: '100%',
           maxHeight: '90vh',
           overflowY: 'auto',
-          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)',
-          border: '1px solid #ef4444'
+          boxShadow: '0 25px 60px rgba(0, 0, 0, 0.6)', // ✅ Sombra mais suave
+          border: '1px solid rgba(239, 68, 68, 0.3)', // ✅ Borda mais suave
+          animation: 'slideUp 0.3s ease-out' // ✅ NOVO: Animação de entrada
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -102,248 +106,331 @@ function ModalReprovacao({ isOpen, onClose, onConfirm, candidato }) {
           display: 'flex', 
           justifyContent: 'space-between', 
           alignItems: 'center',
-          marginBottom: '20px'
+          marginBottom: '24px'
         }}>
           <h2 style={{ 
-            color: '#ef4444', 
+            color: '#f8fafc', // ✅ Cor mais suave
             margin: 0,
             fontSize: '24px',
-            fontWeight: '600',
+            fontWeight: '700',
             display: 'flex',
             alignItems: 'center',
-            gap: '10px'
+            gap: '12px'
           }}>
-            ❌ Reprovar Candidato
+            <span style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '40px',
+              height: '40px',
+              borderRadius: '12px',
+              background: 'rgba(239, 68, 68, 0.15)', // ✅ Background suave
+              fontSize: '20px'
+            }}>
+              ❌
+            </span>
+            Reprovar Candidato
           </h2>
           <button
             onClick={handleClose}
             style={{
-              background: 'transparent',
+              background: 'rgba(148, 163, 184, 0.1)', // ✅ Background suave
               border: 'none',
-              color: '#94a3b8',
-              fontSize: '28px',
+              color: '#cbd5e1',
+              fontSize: '24px',
               cursor: 'pointer',
               padding: '0',
-              width: '32px',
-              height: '32px',
+              width: '36px',
+              height: '36px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              borderRadius: '6px',
-              transition: 'all 0.2s'
+              borderRadius: '10px',
+              transition: 'all 0.2s ease',
+              fontWeight: '300'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.background = 'rgba(148, 163, 184, 0.2)';
+              e.target.style.transform = 'rotate(90deg)'; // ✅ Rotação suave
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.background = 'rgba(148, 163, 184, 0.1)';
+              e.target.style.transform = 'rotate(0deg)';
             }}
           >
             ×
           </button>
         </div>
 
+        {/* Card do Candidato - Design Moderno */}
         <div style={{
-          backgroundColor: '#0f172a',
-          padding: '16px',
-          borderRadius: '8px',
-          marginBottom: '24px',
-          border: '1px solid #334155'
+          background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.8) 0%, rgba(30, 41, 59, 0.6) 100%)', // ✅ Gradiente suave
+          padding: '20px',
+          borderRadius: '12px',
+          marginBottom: '28px',
+          border: '1px solid rgba(71, 85, 105, 0.3)',
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)' // ✅ Sombra interna suave
         }}>
-          <p style={{ color: '#f1f5f9', margin: '0 0 8px 0', fontWeight: '600' }}>
+          <p style={{ 
+            color: '#f8fafc', 
+            margin: '0 0 8px 0', 
+            fontWeight: '600',
+            fontSize: '16px',
+            letterSpacing: '-0.01em'
+          }}>
             {candidato?.nome_completo}
           </p>
-          <p style={{ color: '#94a3b8', margin: 0, fontSize: '14px' }}>
-            {candidato?.cargo_pretendido || 'Cargo não informado'}
+          <p style={{ 
+            color: '#94a3b8', 
+            margin: 0, 
+            fontSize: '14px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px'
+          }}>
+            💼 {candidato?.cargo_pretendido || 'Cargo não informado'}
           </p>
         </div>
 
         <form onSubmit={handleSubmit}>
+          {/* Motivo da Reprovação */}
           <div style={{ marginBottom: '24px' }}>
             <label style={{ 
               display: 'block', 
               color: '#f1f5f9', 
-              marginBottom: '8px',
-              fontWeight: '500',
-              fontSize: '14px'
+              marginBottom: '10px',
+              fontWeight: '600',
+              fontSize: '14px',
+              letterSpacing: '-0.01em'
             }}>
               Motivo da Reprovação <span style={{ color: '#ef4444' }}>*</span>
             </label>
             <textarea
               value={motivoReprovacao}
               onChange={(e) => setMotivoReprovacao(e.target.value)}
-              placeholder="Descreva o motivo da reprovação (obrigatório)"
+              placeholder="Descreva o motivo da reprovação..."
               required
               rows="4"
               style={{
                 width: '100%',
-                padding: '12px',
-                backgroundColor: '#0f172a',
-                border: '1px solid #334155',
-                borderRadius: '6px',
+                padding: '14px',
+                backgroundColor: 'rgba(15, 23, 42, 0.6)', // ✅ Background suave
+                border: '1px solid rgba(71, 85, 105, 0.4)',
+                borderRadius: '10px',
                 color: '#f1f5f9',
                 fontSize: '14px',
                 resize: 'vertical',
-                fontFamily: 'inherit'
+                fontFamily: 'inherit',
+                transition: 'all 0.2s ease',
+                outline: 'none'
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = '#ef4444';
+                e.target.style.boxShadow = '0 0 0 3px rgba(239, 68, 68, 0.1)'; // ✅ Glow suave
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = 'rgba(71, 85, 105, 0.4)';
+                e.target.style.boxShadow = 'none';
               }}
             />
           </div>
 
+          {/* Checkbox Banco de Talentos - Design Premium */}
           <div style={{
-            backgroundColor: '#0f172a',
-            padding: '16px',
-            borderRadius: '8px',
-            marginBottom: '20px',
-            border: '1px solid #334155'
+            background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(245, 158, 11, 0.03) 100%)', // ✅ Gradiente sutil
+            padding: '18px',
+            borderRadius: '12px',
+            marginBottom: '24px',
+            border: '1px solid rgba(245, 158, 11, 0.2)',
+            transition: 'all 0.2s ease'
           }}>
             <label style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '10px',
+              gap: '12px',
               cursor: 'pointer',
-              color: '#f1f5f9',
+              color: '#f8fafc',
               fontSize: '15px',
-              fontWeight: '500'
+              fontWeight: '600'
             }}>
               <input
                 type="checkbox"
                 checked={adicionarTalentos}
                 onChange={(e) => setAdicionarTalentos(e.target.checked)}
                 style={{
-                  width: '18px',
-                  height: '18px',
-                  cursor: 'pointer'
+                  width: '20px',
+                  height: '20px',
+                  cursor: 'pointer',
+                  accentColor: '#f59e0b' // ✅ Cor moderna
                 }}
               />
-              ⭐ Adicionar ao Banco de Talentos
+              <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                ⭐ Adicionar ao Banco de Talentos
+              </span>
             </label>
             <p style={{ 
               color: '#94a3b8', 
               fontSize: '13px', 
-              margin: '8px 0 0 28px' 
+              margin: '10px 0 0 32px',
+              lineHeight: '1.5'
             }}>
-              Marque para salvar este candidato para oportunidades futuras
+              Guardar este candidato para oportunidades futuras
             </p>
           </div>
 
+          {/* Setor de Interesse (condicional) - Animação Suave */}
           {adicionarTalentos && (
-            <div style={{
-              backgroundColor: '#0f172a',
-              padding: '20px',
-              borderRadius: '8px',
-              marginBottom: '20px',
-              border: '1px solid #10b981'
+            <div style={{ 
+              marginBottom: '24px',
+              animation: 'fadeIn 0.3s ease-out' // ✅ Animação de entrada
             }}>
-              <h3 style={{ 
-                color: '#10b981', 
-                margin: '0 0 16px 0',
-                fontSize: '16px',
+              <label style={{ 
+                display: 'block', 
+                color: '#f1f5f9', 
+                marginBottom: '10px',
+                fontSize: '14px',
                 fontWeight: '600'
               }}>
-                📋 Dados para o Banco de Talentos
-              </h3>
-
-              <div style={{ marginBottom: '16px' }}>
-                <label style={{ 
-                  display: 'block', 
-                  color: '#f1f5f9', 
-                  marginBottom: '8px',
+                Setor de Interesse <span style={{ color: '#ef4444' }}>*</span>
+              </label>
+              <select
+                value={setorTalentos}
+                onChange={(e) => setSetorTalentos(e.target.value)}
+                required={adicionarTalentos}
+                style={{
+                  width: '100%',
+                  padding: '12px 14px',
+                  backgroundColor: 'rgba(15, 23, 42, 0.6)',
+                  border: '1px solid rgba(71, 85, 105, 0.4)',
+                  borderRadius: '10px',
+                  color: '#f1f5f9',
                   fontSize: '14px',
-                  fontWeight: '500'
-                }}>
-                  Setor de Interesse <span style={{ color: '#ef4444' }}>*</span>
-                </label>
-                <select
-                  value={setorTalentos}
-                  onChange={(e) => setSetorTalentos(e.target.value)}
-                  required={adicionarTalentos}
-                  style={{
-                    width: '100%',
-                    padding: '10px',
-                    backgroundColor: '#1e293b',
-                    border: '1px solid #334155',
-                    borderRadius: '6px',
-                    color: '#f1f5f9',
-                    fontSize: '14px'
-                  }}
-                >
-                  <option value="">Selecione o setor</option>
-                  <option value="Contabilidade">Contabilidade</option>
-                  <option value="Fiscal">Fiscal</option>
-                  <option value="RH">RH</option>
-                  <option value="TI">TI</option>
-                  <option value="Administrativo">Administrativo</option>
-                  <option value="Financeiro">Financeiro</option>
-                  <option value="Comercial">Comercial</option>
-                  <option value="Atendimento">Atendimento</option>
-                  <option value="Outro">Outro</option>
-                </select>
-              </div>
-
-              <div>
-                <label style={{ 
-                  display: 'block', 
-                  color: '#f1f5f9', 
-                  marginBottom: '8px',
-                  fontSize: '14px',
-                  fontWeight: '500'
-                }}>
-                  Observações (opcional)
-                </label>
-                <textarea
-                  value={observacoesTalentos}
-                  onChange={(e) => setObservacoesTalentos(e.target.value)}
-                  placeholder="Habilidades, experiências relevantes, etc."
-                  rows="3"
-                  style={{
-                    width: '100%',
-                    padding: '10px',
-                    backgroundColor: '#1e293b',
-                    border: '1px solid #334155',
-                    borderRadius: '6px',
-                    color: '#f1f5f9',
-                    fontSize: '14px',
-                    resize: 'vertical',
-                    fontFamily: 'inherit'
-                  }}
-                />
-              </div>
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  outline: 'none'
+                }}
+                onFocus={(e) => e.target.style.borderColor = '#10b981'}
+                onBlur={(e) => e.target.style.borderColor = 'rgba(71, 85, 105, 0.4)'}
+              >
+                <option value="">Selecione o setor</option>
+                <option value="Contabilidade">📊 Contabilidade</option>
+                <option value="Fiscal">💰 Fiscal</option>
+                <option value="RH">👥 RH</option>
+                <option value="TI">💻 TI</option>
+                <option value="Administrativo">📋 Administrativo</option>
+                <option value="Financeiro">💵 Financeiro</option>
+                <option value="Comercial">📈 Comercial</option>
+                <option value="Atendimento">📞 Atendimento</option>
+                <option value="Outro">📌 Outro</option>
+              </select>
             </div>
           )}
 
+          {/* Observações (condicional) */}
+          {adicionarTalentos && (
+            <div style={{ 
+              marginBottom: '24px',
+              animation: 'fadeIn 0.3s ease-out 0.1s both' // ✅ Delay na animação
+            }}>
+              <label style={{ 
+                display: 'block', 
+                color: '#f1f5f9', 
+                marginBottom: '10px',
+                fontSize: '14px',
+                fontWeight: '600'
+              }}>
+                Observações <span style={{ color: '#64748b', fontWeight: '400' }}>(opcional)</span>
+              </label>
+              <textarea
+                value={observacoesTalentos}
+                onChange={(e) => setObservacoesTalentos(e.target.value)}
+                placeholder="Habilidades, experiências relevantes..."
+                rows="3"
+                style={{
+                  width: '100%',
+                  padding: '14px',
+                  backgroundColor: 'rgba(15, 23, 42, 0.6)',
+                  border: '1px solid rgba(71, 85, 105, 0.4)',
+                  borderRadius: '10px',
+                  color: '#f1f5f9',
+                  fontSize: '14px',
+                  resize: 'vertical',
+                  fontFamily: 'inherit',
+                  transition: 'all 0.2s ease',
+                  outline: 'none'
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = '#10b981';
+                  e.target.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.1)';
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = 'rgba(71, 85, 105, 0.4)';
+                  e.target.style.boxShadow = 'none';
+                }}
+              />
+            </div>
+          )}
+
+          {/* Alerta de Exclusão - Design Moderno */}
           {!adicionarTalentos && (
             <div style={{
-              backgroundColor: '#450a0a',
-              border: '1px solid #ef4444',
-              borderRadius: '8px',
-              padding: '16px',
-              marginBottom: '20px'
+              background: 'linear-gradient(135deg, rgba(69, 10, 10, 0.4) 0%, rgba(69, 10, 10, 0.2) 100%)', // ✅ Gradiente suave
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              borderRadius: '12px',
+              padding: '16px 18px',
+              marginBottom: '24px',
+              animation: 'pulse 2s ease-in-out infinite' // ✅ Pulso suave
             }}>
               <p style={{ 
                 color: '#fca5a5', 
                 margin: 0,
                 fontSize: '13px',
-                lineHeight: '1.5'
+                lineHeight: '1.6',
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '10px'
               }}>
-                ⚠️ <strong>Atenção:</strong> Se não adicionar ao Banco de Talentos, 
-                o candidato será <strong>deletado permanentemente</strong> do sistema.
+                <span style={{ fontSize: '16px', flexShrink: 0 }}>⚠️</span>
+                <span>
+                  <strong>Atenção:</strong> Sem adicionar ao Banco de Talentos, 
+                  o candidato será <strong>deletado permanentemente</strong> do sistema.
+                </span>
               </p>
             </div>
           )}
 
+          {/* Botões - Design Premium */}
           <div style={{ 
             display: 'flex', 
             gap: '12px', 
-            justifyContent: 'flex-end' 
+            justifyContent: 'flex-end',
+            paddingTop: '8px'
           }}>
             <button
               type="button"
               onClick={handleClose}
               disabled={enviando}
               style={{
-                padding: '12px 24px',
-                backgroundColor: '#334155',
+                padding: '12px 28px',
+                background: 'rgba(71, 85, 105, 0.3)', // ✅ Background suave
                 color: '#f1f5f9',
-                border: 'none',
-                borderRadius: '6px',
+                border: '1px solid rgba(71, 85, 105, 0.5)',
+                borderRadius: '10px',
                 cursor: enviando ? 'not-allowed' : 'pointer',
-                fontWeight: '500',
+                fontWeight: '600',
                 fontSize: '14px',
-                opacity: enviando ? 0.5 : 1
+                opacity: enviando ? 0.5 : 1,
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                if (!enviando) {
+                  e.target.style.background = 'rgba(71, 85, 105, 0.5)';
+                  e.target.style.transform = 'translateY(-1px)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.background = 'rgba(71, 85, 105, 0.3)';
+                e.target.style.transform = 'translateY(0)';
               }}
             >
               Cancelar
@@ -352,27 +439,78 @@ function ModalReprovacao({ isOpen, onClose, onConfirm, candidato }) {
               type="submit"
               disabled={enviando}
               style={{
-                padding: '12px 24px',
-                backgroundColor: '#ef4444',
+                padding: '12px 28px',
+                background: enviando 
+                  ? 'rgba(148, 163, 184, 0.3)' 
+                  : 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)', // ✅ Gradiente
                 color: 'white',
                 border: 'none',
-                borderRadius: '6px',
+                borderRadius: '10px',
                 cursor: enviando ? 'not-allowed' : 'pointer',
-                fontWeight: '600',
+                fontWeight: '700',
                 fontSize: '14px',
-                opacity: enviando ? 0.5 : 1
+                opacity: enviando ? 0.6 : 1,
+                transition: 'all 0.2s ease',
+                boxShadow: enviando ? 'none' : '0 4px 12px rgba(239, 68, 68, 0.3)' // ✅ Sombra suave
+              }}
+              onMouseEnter={(e) => {
+                if (!enviando) {
+                  e.target.style.transform = 'translateY(-2px)';
+                  e.target.style.boxShadow = '0 6px 20px rgba(239, 68, 68, 0.4)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.transform = 'translateY(0)';
+                e.target.style.boxShadow = '0 4px 12px rgba(239, 68, 68, 0.3)';
               }}
             >
-              {enviando ? 'Processando...' : 'Confirmar Reprovação'}
+              {enviando ? (
+                <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{
+                    width: '14px',
+                    height: '14px',
+                    border: '2px solid rgba(255,255,255,0.3)',
+                    borderTopColor: '#fff',
+                    borderRadius: '50%',
+                    animation: 'spin 0.8s linear infinite'
+                  }} />
+                  Processando...
+                </span>
+              ) : '❌ Confirmar Reprovação'}
             </button>
           </div>
         </form>
       </div>
+
+      {/* CSS Animations */}
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes slideUp {
+          from { 
+            opacity: 0; 
+            transform: translateY(20px);
+          }
+          to { 
+            opacity: 1; 
+            transform: translateY(0);
+          }
+        }
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.8; }
+        }
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 }
 
-// Componente de Card Arrastável
+// ========== CARD DRAGGABLE (DESIGN MODERNO E SUAVE) ==========
 function CandidatoCard({ candidato, onClick }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: candidato.id
@@ -380,15 +518,21 @@ function CandidatoCard({ candidato, onClick }) {
 
   const style = {
     transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
-    opacity: isDragging ? 0.5 : 1,
-    backgroundColor: '#334155',
-    border: '1px solid #475569',
-    borderRadius: '6px',
-    padding: '12px',
+    opacity: isDragging ? 0.6 : 1,
+    background: isDragging 
+      ? 'linear-gradient(135deg, #475569 0%, #334155 100%)'
+      : 'linear-gradient(135deg, rgba(51, 65, 85, 0.6) 0%, rgba(30, 41, 59, 0.8) 100%)', // ✅ Gradiente suave
+    backdropFilter: 'blur(10px)', // ✅ Blur moderno
+    border: '1px solid rgba(71, 85, 105, 0.4)',
+    borderRadius: '10px',
+    padding: '14px',
     cursor: isDragging ? 'grabbing' : 'grab',
     marginBottom: '10px',
-    transition: isDragging ? 'none' : 'transform 0.2s ease',
-    touchAction: 'none'
+    transition: isDragging ? 'none' : 'all 0.2s ease',
+    touchAction: 'none',
+    boxShadow: isDragging 
+      ? '0 10px 30px rgba(0, 0, 0, 0.5)' 
+      : '0 2px 8px rgba(0, 0, 0, 0.2)' // ✅ Sombra suave
   };
 
   const calcularTempoNaEtapa = (dataInicio) => {
@@ -406,6 +550,20 @@ function CandidatoCard({ candidato, onClick }) {
       style={style}
       {...listeners}
       {...attributes}
+      onMouseEnter={(e) => {
+        if (!isDragging) {
+          e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.6)';
+          e.currentTarget.style.transform = 'translateY(-2px)';
+          e.currentTarget.style.boxShadow = '0 6px 16px rgba(0, 0, 0, 0.3)';
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!isDragging) {
+          e.currentTarget.style.borderColor = 'rgba(71, 85, 105, 0.4)';
+          e.currentTarget.style.transform = 'translateY(0)';
+          e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.2)';
+        }
+      }}
     >
       <div onClick={(e) => {
         e.stopPropagation();
@@ -413,9 +571,10 @@ function CandidatoCard({ candidato, onClick }) {
       }}>
         <div style={{
           color: '#f8fafc',
-          fontWeight: 'bold',
+          fontWeight: '600',
           fontSize: '14px',
-          marginBottom: '5px'
+          marginBottom: '6px',
+          letterSpacing: '-0.01em'
         }}>
           {candidato.nome_completo}
         </div>
@@ -423,7 +582,10 @@ function CandidatoCard({ candidato, onClick }) {
         <div style={{
           color: '#94a3b8',
           fontSize: '12px',
-          marginBottom: '8px'
+          marginBottom: '10px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '4px'
         }}>
           💼 {candidato.cargo_pretendido}
         </div>
@@ -435,18 +597,29 @@ function CandidatoCard({ candidato, onClick }) {
           fontSize: '11px',
           color: '#64748b'
         }}>
-          <span>
+          <span style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '4px',
+            padding: '3px 8px',
+            background: 'rgba(100, 116, 139, 0.2)',
+            borderRadius: '6px'
+          }}>
             ⏱️ {calcularTempoNaEtapa(candidato.etapaAtual?.data_inicio)}
           </span>
           {candidato.etapaAtual?.score && (
             <span style={{
-              backgroundColor: candidato.etapaAtual.score >= 70 ? '#10b981' : '#f59e0b',
+              background: candidato.etapaAtual.score >= 70 
+                ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' 
+                : 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', // ✅ Gradiente
               color: 'white',
-              padding: '2px 6px',
-              borderRadius: '4px',
-              fontWeight: 'bold'
+              padding: '4px 8px',
+              borderRadius: '6px',
+              fontWeight: 'bold',
+              fontSize: '11px',
+              boxShadow: '0 2px 6px rgba(0, 0, 0, 0.2)'
             }}>
-              {candidato.etapaAtual.score}
+              ⭐ {candidato.etapaAtual.score}
             </span>
           )}
         </div>
@@ -455,7 +628,7 @@ function CandidatoCard({ candidato, onClick }) {
   );
 }
 
-// Componente de Coluna (Droppable)
+// ========== COLUNA DROPPABLE (DESIGN PREMIUM) ==========
 function ColunaKanban({ etapa, candidatos, onCandidatoClick }) {
   const { setNodeRef, isOver } = useDroppable({
     id: etapa.id
@@ -465,40 +638,68 @@ function ColunaKanban({ etapa, candidatos, onCandidatoClick }) {
     <div
       ref={setNodeRef}
       style={{
-        backgroundColor: isOver ? '#334155' : '#1e293b',
-        border: `2px solid ${isOver ? etapa.cor : '#334155'}`,
-        borderRadius: '8px',
-        padding: '12px',
+        background: isOver 
+          ? `linear-gradient(135deg, rgba(${parseInt(etapa.cor.slice(1,3), 16)}, ${parseInt(etapa.cor.slice(3,5), 16)}, ${parseInt(etapa.cor.slice(5,7), 16)}, 0.15) 0%, rgba(30, 41, 59, 0.8) 100%)`
+          : 'linear-gradient(135deg, rgba(30, 41, 59, 0.5) 0%, rgba(15, 23, 42, 0.7) 100%)', // ✅ Gradiente suave
+        backdropFilter: 'blur(10px)', // ✅ Blur premium
+        border: `2px solid ${isOver ? etapa.cor : 'rgba(51, 65, 85, 0.6)'}`,
+        borderRadius: '14px', // ✅ Mais arredondado
+        padding: '14px',
         minHeight: '500px',
-        transition: 'all 0.3s'
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', // ✅ Curva suave
+        boxShadow: isOver 
+          ? `0 8px 24px rgba(${parseInt(etapa.cor.slice(1,3), 16)}, ${parseInt(etapa.cor.slice(3,5), 16)}, ${parseInt(etapa.cor.slice(5,7), 16)}, 0.3)`
+          : '0 4px 12px rgba(0, 0, 0, 0.2)'
       }}
     >
+      {/* Header da Coluna - Design Premium */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginBottom: '12px',
-        paddingBottom: '10px',
-        borderBottom: `2px solid ${etapa.cor}`
+        marginBottom: '14px',
+        paddingBottom: '12px',
+        borderBottom: `2px solid ${etapa.cor}`,
+        background: `linear-gradient(90deg, ${etapa.cor}15 0%, transparent 100%)`, // ✅ Gradiente no header
+        marginLeft: '-14px',
+        marginRight: '-14px',
+        marginTop: '-14px',
+        padding: '14px 14px 12px 14px',
+        borderTopLeftRadius: '12px',
+        borderTopRightRadius: '12px'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '20px' }}>{etapa.icone}</span>
-          <span style={{ color: '#f8fafc', fontWeight: 'bold', fontSize: '14px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span style={{ 
+            fontSize: '22px',
+            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' // ✅ Sombra no ícone
+          }}>
+            {etapa.icone}
+          </span>
+          <span style={{ 
+            color: '#f8fafc', 
+            fontWeight: '700', 
+            fontSize: '14px',
+            letterSpacing: '-0.02em'
+          }}>
             {etapa.nome}
           </span>
         </div>
         <span style={{
-          backgroundColor: etapa.cor,
+          background: `linear-gradient(135deg, ${etapa.cor} 0%, ${etapa.cor}dd 100%)`, // ✅ Gradiente no badge
           color: 'white',
-          padding: '2px 8px',
-          borderRadius: '12px',
+          padding: '4px 10px',
+          borderRadius: '8px',
           fontSize: '12px',
-          fontWeight: 'bold'
+          fontWeight: 'bold',
+          boxShadow: `0 2px 8px ${etapa.cor}40`,
+          minWidth: '28px',
+          textAlign: 'center'
         }}>
           {candidatos.length}
         </span>
       </div>
 
+      {/* Área dos Cards */}
       <div style={{ minHeight: '400px' }}>
         {candidatos.map((candidato) => (
           <CandidatoCard
@@ -511,11 +712,21 @@ function ColunaKanban({ etapa, candidatos, onCandidatoClick }) {
         {candidatos.length === 0 && (
           <div style={{
             textAlign: 'center',
-            padding: '30px 10px',
+            padding: '40px 10px',
             color: '#64748b',
-            fontSize: '13px'
+            fontSize: '13px',
+            background: 'rgba(15, 23, 42, 0.4)',
+            borderRadius: '10px',
+            border: '2px dashed rgba(71, 85, 105, 0.3)',
+            marginTop: '10px'
           }}>
-            Nenhum candidato nesta etapa
+            <div style={{ fontSize: '32px', marginBottom: '8px', opacity: 0.5 }}>
+              📭
+            </div>
+            <div>Nenhum candidato</div>
+            <div style={{ fontSize: '11px', marginTop: '4px', opacity: 0.7 }}>
+              Arraste cards para cá
+            </div>
           </div>
         )}
       </div>
@@ -523,7 +734,7 @@ function ColunaKanban({ etapa, candidatos, onCandidatoClick }) {
   );
 }
 
-// Componente Principal
+// ========== COMPONENTE PRINCIPAL ==========
 export default function KanbanCandidatos() {
   const [candidatosPorEtapa, setCandidatosPorEtapa] = useState({});
   const [carregando, setCarregando] = useState(true);
@@ -591,8 +802,7 @@ export default function KanbanCandidatos() {
 
       setCandidatosPorEtapa(porEtapa);
     } catch (err) {
-      console.error('Erro ao buscar candidatos:', err);
-      alert('Erro ao carregar pipeline');
+      handleError(err, 'Erro ao carregar pipeline'); // ✅ MUDOU
     }
     setCarregando(false);
   };
@@ -673,11 +883,11 @@ export default function KanbanCandidatos() {
           .eq('id', candidatoId);
       }
 
-      console.log(`✅ Candidato movido de ${etapaAtual} → ${novaEtapaId}`);
+      const etapaInfo = ETAPAS.find(e => e.id === novaEtapaId);
+      showSuccess(`${etapaInfo.icone} Candidato movido para: ${etapaInfo.nome}`); // ✅ MUDOU
 
     } catch (err) {
-      console.error('Erro ao mover candidato:', err);
-      alert('Erro ao atualizar pipeline');
+      handleError(err, 'Erro ao mover candidato'); // ✅ MUDOU
       fetchCandidatos();
     }
   };
@@ -708,20 +918,19 @@ export default function KanbanCandidatos() {
           })
           .eq('id', candidato.id);
 
-        alert('✅ Candidato reprovado e adicionado ao Banco de Talentos!');
+        showSuccess('✅ Candidato reprovado e adicionado ao Banco de Talentos!'); // ✅ MUDOU
       } else {
         await supabase
           .from('candidatos')
           .delete()
           .eq('id', candidato.id);
 
-        alert('✅ Candidato reprovado e removido do sistema.');
+        showSuccess('✅ Candidato reprovado e removido do sistema.'); // ✅ MUDOU
       }
 
       await fetchCandidatos();
     } catch (error) {
-      console.error('Erro ao processar reprovação:', error);
-      alert('❌ Erro ao processar reprovação');
+      handleError(error, 'Erro ao processar reprovação'); // ✅ MUDOU
     }
   };
 
@@ -741,25 +950,55 @@ export default function KanbanCandidatos() {
         gap: '1rem'
       }}>
         <div style={{
-          width: '40px',
-          height: '40px',
-          border: '3px solid #334155',
+          width: '48px',
+          height: '48px',
+          border: '4px solid rgba(51, 65, 85, 0.3)',
           borderTopColor: '#f59e0b',
           borderRadius: '50%',
-          animation: 'spin 1s linear infinite'
+          animation: 'spin 1s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite' // ✅ Curva suave
         }}></div>
-        <p style={{ color: '#94a3b8' }}>Carregando pipeline...</p>
+        <p style={{ 
+          color: '#94a3b8',
+          fontSize: '14px',
+          fontWeight: '500'
+        }}>
+          Carregando pipeline...
+        </p>
       </div>
     );
   }
 
   return (
     <div style={{ padding: '20px' }}>
-      <div style={{ marginBottom: '20px' }}>
-        <h2 style={{ color: '#f8fafc', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+      {/* Header Premium */}
+      <div style={{ 
+        marginBottom: '24px',
+        padding: '20px 24px',
+        background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(139, 92, 246, 0.05) 100%)', // ✅ Gradiente suave
+        borderRadius: '14px',
+        border: '1px solid rgba(59, 130, 246, 0.2)'
+      }}>
+        <h2 style={{ 
+          color: '#f8fafc', 
+          marginBottom: '8px', 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '12px',
+          fontSize: '22px',
+          fontWeight: '700',
+          letterSpacing: '-0.02em'
+        }}>
           🎯 Pipeline de Candidatos
         </h2>
-        <p style={{ color: '#94a3b8', fontSize: '14px', marginBottom: '15px' }}>
+        <p style={{ 
+          color: '#94a3b8', 
+          fontSize: '14px', 
+          margin: 0,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px'
+        }}>
+          <span style={{ fontSize: '16px' }}>👆</span>
           Arraste os cards para mover candidatos entre as etapas
         </p>
       </div>
@@ -774,7 +1013,7 @@ export default function KanbanCandidatos() {
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(4, minmax(280px, 1fr))',
-          gap: '15px',
+          gap: '16px',
           overflowX: 'auto',
           paddingBottom: '20px'
         }}>
@@ -794,13 +1033,14 @@ export default function KanbanCandidatos() {
         <DragOverlay>
           {activeId && activeCandidato ? (
             <div style={{
-              backgroundColor: '#475569',
-              border: '2px solid #f59e0b',
-              borderRadius: '6px',
-              padding: '12px',
-              boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+              background: 'linear-gradient(135deg, #475569 0%, #334155 100%)',
+              backdropFilter: 'blur(10px)',
+              border: '2px solid #3b82f6',
+              borderRadius: '10px',
+              padding: '14px',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.6)',
               cursor: 'grabbing',
-              opacity: 0.9
+              opacity: 0.95
             }}>
               <div style={{
                 color: '#f8fafc',
@@ -843,6 +1083,24 @@ export default function KanbanCandidatos() {
       <style>{`
         @keyframes spin {
           to { transform: rotate(360deg); }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes slideUp {
+          from { 
+            opacity: 0; 
+            transform: translateY(20px);
+          }
+          to { 
+            opacity: 1; 
+            transform: translateY(0);
+          }
+        }
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.8; }
         }
       `}</style>
     </div>

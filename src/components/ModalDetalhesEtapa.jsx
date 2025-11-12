@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../config/supabase';
+import { showSuccess, showError } from '../utils/toast'; // ✅ NOVO
+import { handleError } from '../utils/errorHandler'; // ✅ NOVO
 
 export default function ModalDetalhesEtapa({ candidato, isOpen, onClose, onAtualizar }) {
   const [historico, setHistorico] = useState([]);
@@ -26,525 +28,448 @@ export default function ModalDetalhesEtapa({ candidato, isOpen, onClose, onAtual
         .eq('candidato_id', candidato.id)
         .order('criado_em', { ascending: false });
 
-      if (!error) {
-        setHistorico(data || []);
-        const etapaAtual = data?.[0];
-        if (etapaAtual) {
-          setFormData({
-            score: etapaAtual.score || '',
-            observacoes: etapaAtual.observacoes || ''
-          });
-        }
+      if (error) throw error;
+
+      setHistorico(data || []);
+
+      const etapaAtual = data?.[0];
+      if (etapaAtual) {
+        setFormData({
+          score: etapaAtual.score || '',
+          observacoes: etapaAtual.observacoes || ''
+        });
       }
     } catch (err) {
-      console.error('Erro ao buscar histórico:', err);
+      handleError(err, 'Erro ao buscar histórico'); // ✅ MUDOU
+    } finally {
+      setCarregando(false);
     }
-    setCarregando(false);
   };
 
-  const salvarEdicao = async () => {
+  const handleSalvarObservacoes = async () => {
+    if (!historico[0]) {
+      showError('Nenhuma etapa ativa para salvar'); // ✅ MUDOU
+      return;
+    }
+
     try {
-      const etapaAtualId = historico[0]?.id;
-      if (!etapaAtualId) return;
+      const score = formData.score ? parseFloat(formData.score) : null;
+
+      if (score !== null && (score < 0 || score > 10)) {
+        showError('Score deve ser entre 0 e 10'); // ✅ MUDOU
+        return;
+      }
 
       const { error } = await supabase
         .from('etapas_candidato')
         .update({
-          score: formData.score ? parseInt(formData.score) : null,
+          score: score,
           observacoes: formData.observacoes
         })
-        .eq('id', etapaAtualId);
+        .eq('id', historico[0].id);
 
-      if (!error) {
-        alert('Atualizado com sucesso!');
-        setEditando(false);
-        fetchHistorico();
+      if (error) throw error;
+
+      if (score !== null) {
+        await supabase
+          .from('candidatos')
+          .update({ score: score })
+          .eq('id', candidato.id);
+      }
+
+      showSuccess('📝 Observações salvas com sucesso!'); // ✅ MUDOU
+      setEditando(false);
+      fetchHistorico();
+      
+      if (onAtualizar) {
         onAtualizar();
       }
     } catch (err) {
-      console.error('Erro ao salvar:', err);
-      alert('Erro ao salvar alterações');
+      handleError(err, 'Erro ao salvar observações'); // ✅ MUDOU
     }
   };
 
-  const getNomeEtapa = (etapa) => {
-    const nomes = {
-      'triagem': '📋 Triagem',
-      'pre_entrevista': '📝 Pré-entrevista',
-      'entrevista_rh': '💼 Entrevista RH',
-      'teste_tecnico': '🧪 Teste Técnico',
-      'teste_comportamental': '🎯 Teste Comportamental',
-      'entrevista_final': '⭐ Entrevista Final',
-      'aprovado': '✅ Aprovado',
-      'reprovado': '❌ Reprovado'
+  const toggleEtapa = (id) => {
+    setEtapaExpandida(etapaExpandida === id ? null : id);
+  };
+
+  const formatarData = (dataString) => {
+    const data = new Date(dataString);
+    return data.toLocaleString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const getEtapaInfo = (etapaId) => {
+    const etapas = {
+      'triagem': { nome: 'Triagem', icone: '📋', cor: '#3b82f6' },
+      'pre_entrevista': { nome: 'Pré-entrevista', icone: '📝', cor: '#8b5cf6' },
+      'entrevista_rh': { nome: 'Entrevista RH', icone: '💼', cor: '#f59e0b' },
+      'teste_tecnico': { nome: 'Teste Técnico', icone: '🧪', cor: '#06b6d4' },
+      'teste_comportamental': { nome: 'Teste Comportamental', icone: '🎯', cor: '#10b981' },
+      'entrevista_final': { nome: 'Entrevista Final', icone: '⭐', cor: '#f59e0b' },
+      'aprovado': { nome: 'Aprovado', icone: '✅', cor: '#10b981' },
+      'reprovado': { nome: 'Reprovado', icone: '❌', cor: '#ef4444' }
     };
-    return nomes[etapa] || etapa;
-  };
-
-  const getCorEtapa = (etapa) => {
-    const cores = {
-      'triagem': '#3b82f6',
-      'pre_entrevista': '#8b5cf6',
-      'entrevista_rh': '#f59e0b',
-      'teste_tecnico': '#06b6d4',
-      'teste_comportamental': '#10b981',
-      'entrevista_final': '#f59e0b',
-      'aprovado': '#10b981',
-      'reprovado': '#ef4444'
-    };
-    return cores[etapa] || '#64748b';
-  };
-
-  const getCorStatus = (status) => {
-    const cores = {
-      'pendente': '#94a3b8',
-      'em_andamento': '#f59e0b',
-      'concluido': '#10b981',
-      'reprovado': '#ef4444'
-    };
-    return cores[status] || '#94a3b8';
-  };
-
-  const getTextoStatus = (status, index) => {
-    if (index === 0) {
-      if (status === 'em_andamento') return 'ATUAL';
-      if (status === 'concluido') return 'Concluído';
-      if (status === 'reprovado') return 'Reprovado';
-      return 'Atual';
-    } else {
-      if (status === 'em_andamento') return 'Próxima Etapa';
-      if (status === 'concluido') return 'Concluído';
-      if (status === 'reprovado') return 'Reprovado';
-      if (status === 'pendente') return 'Pendente';
-      return status;
-    }
-  };
-
-  const calcularTempoNaEtapa = (dataInicio, dataConclusao) => {
-    const inicio = new Date(dataInicio);
-    const fim = dataConclusao ? new Date(dataConclusao) : new Date();
-    const diff = fim.getTime() - inicio.getTime();
-    const dias = Math.floor(diff / (1000 * 60 * 60 * 24));
-    const horas = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    
-    if (dias === 0 && horas === 0) return 'Menos de 1h';
-    if (dias === 0) return `${horas}h`;
-    if (dias === 1) return '1 dia';
-    return `${dias} dias`;
+    return etapas[etapaId] || { nome: etapaId, icone: '📌', cor: '#64748b' };
   };
 
   if (!isOpen) return null;
 
   return (
-    <div 
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.7)',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        zIndex: 9999
-      }}
-      onClick={onClose}
-    >
-      <div 
-        style={{
-          backgroundColor: '#1e293b',
-          borderRadius: '12px',
-          width: '90%',
-          maxWidth: '900px',
-          maxHeight: '90vh',
-          display: 'flex',
-          flexDirection: 'column',
-          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)'
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* HEADER */}
-        <div style={{
-          padding: '20px',
-          borderBottom: '2px solid #334155',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center'
-        }}>
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: 'rgba(0,0,0,0.7)',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 1000,
+      overflowY: 'auto'
+    }}>
+      <div style={{
+        background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
+        padding: '30px',
+        borderRadius: '12px',
+        maxWidth: '800px',
+        width: '90%',
+        maxHeight: '90vh',
+        overflowY: 'auto',
+        border: '1px solid #475569',
+        margin: '20px 0'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '20px' }}>
           <div>
-            <h2 style={{
-              color: '#f8fafc',
-              margin: '0 0 5px 0',
-              fontSize: '22px'
-            }}>
-              {candidato.nome_completo}
+            <h2 style={{ color: '#f8fafc', marginBottom: '8px' }}>
+              📊 Detalhes do Candidato
             </h2>
-            <p style={{
-              color: '#94a3b8',
-              margin: 0,
-              fontSize: '14px'
-            }}>
-              💼 {candidato.cargo_pretendido}
+            <h3 style={{ color: '#cbd5e1', fontWeight: 'normal', fontSize: '18px' }}>
+              {candidato?.nome_completo}
+            </h3>
+            <p style={{ color: '#94a3b8', fontSize: '14px', marginTop: '4px' }}>
+              {candidato?.cargo_pretendido}
             </p>
           </div>
           <button
             onClick={onClose}
             style={{
-              background: 'transparent',
+              background: '#475569',
+              color: '#f8fafc',
               border: 'none',
-              color: '#94a3b8',
-              fontSize: '28px',
+              padding: '8px 16px',
+              borderRadius: '6px',
               cursor: 'pointer',
-              padding: '0',
-              width: '36px',
-              height: '36px'
+              fontSize: '18px'
             }}
           >
-            ×
+            ✕
           </button>
         </div>
 
-        {/* CONTEÚDO */}
-        <div style={{
-          flex: 1,
-          overflowY: 'auto',
-          padding: '20px'
-        }}>
-          {carregando ? (
+        {carregando ? (
+          <div style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>
             <div style={{
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              padding: '40px',
-              color: '#94a3b8'
-            }}>
-              Carregando histórico...
-            </div>
-          ) : historico.length === 0 ? (
-            <div style={{
-              textAlign: 'center',
-              padding: '40px',
-              color: '#64748b'
-            }}>
-              <p>Nenhum histórico disponível</p>
-            </div>
-          ) : (
-            <div>
-              <h3 style={{
-                color: '#f8fafc',
-                fontSize: '18px',
-                marginBottom: '20px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
+              width: '40px',
+              height: '40px',
+              border: '4px solid #334155',
+              borderTop: '4px solid #3b82f6',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite',
+              margin: '0 auto 15px'
+            }} />
+            <p>Carregando histórico...</p>
+          </div>
+        ) : (
+          <>
+            {/* Etapa Atual - Edição */}
+            {historico.length > 0 && (
+              <div style={{
+                background: 'linear-gradient(135deg, #334155 0%, #1e293b 100%)',
+                padding: '20px',
+                borderRadius: '8px',
+                border: '1px solid #475569',
+                marginBottom: '20px'
               }}>
-                📊 Histórico do Pipeline
-                <span style={{
-                  fontSize: '14px',
-                  fontWeight: '400',
-                  color: '#64748b'
-                }}>
-                  ({historico.length} {historico.length === 1 ? 'etapa' : 'etapas'})
-                </span>
-              </h3>
-
-              {/* TIMELINE COM LINHA VERTICAL */}
-              <div style={{ position: 'relative' }}>
-                {/* Linha vertical da timeline */}
-                <div style={{
-                  position: 'absolute',
-                  left: '19px',
-                  top: '20px',
-                  bottom: '20px',
-                  width: '2px',
-                  backgroundColor: '#334155'
-                }} />
-
-                {historico.map((etapa, index) => {
-                  const isExpanded = etapaExpandida === etapa.id;
-                  const isAtual = index === 0;
-                  const corEtapa = getCorEtapa(etapa.etapa);
-
-                  return (
-                    <div
-                      key={etapa.id}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                  <h3 style={{ color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {getEtapaInfo(historico[0].etapa).icone} Etapa Atual: {getEtapaInfo(historico[0].etapa).nome}
+                  </h3>
+                  {!editando ? (
+                    <button
+                      onClick={() => setEditando(true)}
                       style={{
-                        position: 'relative',
-                        marginBottom: index === historico.length - 1 ? 0 : '20px',
-                        marginLeft: '50px'
+                        background: '#3b82f6',
+                        color: '#fff',
+                        border: 'none',
+                        padding: '8px 16px',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontSize: '14px'
                       }}
                     >
-                      {/* Bolinha colorida na timeline */}
-                      <div style={{
-                        position: 'absolute',
-                        left: '-40px',
-                        top: '16px',
-                        width: '20px',
-                        height: '20px',
-                        borderRadius: '50%',
-                        backgroundColor: corEtapa,
-                        border: '3px solid #1e293b',
-                        zIndex: 1,
-                        boxShadow: isAtual ? `0 0 12px ${corEtapa}` : 'none'
-                      }} />
+                      ✏️ Editar
+                    </button>
+                  ) : null}
+                </div>
 
-                      {/* CARD DA ETAPA */}
-                      <div style={{
-                        backgroundColor: isAtual ? '#0f172a' : '#0f172a',
-                        border: isAtual ? `2px solid ${corEtapa}` : '1px solid #334155',
-                        borderRadius: '8px',
-                        overflow: 'hidden',
-                        boxShadow: isAtual ? '0 4px 12px rgba(0,0,0,0.3)' : 'none'
-                      }}>
-                        {/* HEADER DO CARD */}
-                        <div
-                          onClick={() => !isAtual && setEtapaExpandida(isExpanded ? null : etapa.id)}
-                          style={{
-                            padding: '16px',
-                            cursor: isAtual ? 'default' : 'pointer',
-                            backgroundColor: isExpanded ? '#1e293b' : 'transparent'
-                          }}
-                        >
-                          <div style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center'
-                          }}>
-                            <div style={{ flex: 1 }}>
-                              <div style={{
+                {editando ? (
+                  <>
+                    <div style={{ marginBottom: '15px' }}>
+                      <label style={{ color: '#cbd5e1', display: 'block', marginBottom: '8px' }}>
+                        Score (0-10)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="10"
+                        step="0.5"
+                        value={formData.score}
+                        onChange={(e) => setFormData(prev => ({ ...prev, score: e.target.value }))}
+                        placeholder="Ex: 8.5"
+                        style={{
+                          width: '100%',
+                          padding: '10px',
+                          background: '#1e293b',
+                          color: '#f8fafc',
+                          border: '1px solid #475569',
+                          borderRadius: '6px'
+                        }}
+                      />
+                    </div>
+
+                    <div style={{ marginBottom: '15px' }}>
+                      <label style={{ color: '#cbd5e1', display: 'block', marginBottom: '8px' }}>
+                        Observações
+                      </label>
+                      <textarea
+                        value={formData.observacoes}
+                        onChange={(e) => setFormData(prev => ({ ...prev, observacoes: e.target.value }))}
+                        rows={4}
+                        placeholder="Adicione observações sobre o desempenho do candidato..."
+                        style={{
+                          width: '100%',
+                          padding: '10px',
+                          background: '#1e293b',
+                          color: '#f8fafc',
+                          border: '1px solid #475569',
+                          borderRadius: '6px',
+                          resize: 'vertical'
+                        }}
+                      />
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                      <button
+                        onClick={() => {
+                          setEditando(false);
+                          const etapaAtual = historico[0];
+                          setFormData({
+                            score: etapaAtual.score || '',
+                            observacoes: etapaAtual.observacoes || ''
+                          });
+                        }}
+                        style={{
+                          padding: '10px 20px',
+                          background: '#475569',
+                          color: '#f8fafc',
+                          border: 'none',
+                          borderRadius: '6px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        onClick={handleSalvarObservacoes}
+                        style={{
+                          padding: '10px 20px',
+                          background: '#10b981',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          fontWeight: 'bold'
+                        }}
+                      >
+                        💾 Salvar
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {historico[0].score && (
+                      <div style={{ marginBottom: '10px' }}>
+                        <strong style={{ color: '#cbd5e1' }}>Score: </strong>
+                        <span style={{
+                          background: historico[0].score >= 7 ? '#10b981' : historico[0].score >= 5 ? '#f59e0b' : '#ef4444',
+                          color: '#fff',
+                          padding: '4px 12px',
+                          borderRadius: '12px',
+                          fontWeight: 'bold'
+                        }}>
+                          ⭐ {historico[0].score}/10
+                        </span>
+                      </div>
+                    )}
+                    {historico[0].observacoes && (
+                      <div>
+                        <strong style={{ color: '#cbd5e1' }}>Observações: </strong>
+                        <p style={{ color: '#94a3b8', marginTop: '8px' }}>
+                          {historico[0].observacoes}
+                        </p>
+                      </div>
+                    )}
+                    {!historico[0].score && !historico[0].observacoes && (
+                      <p style={{ color: '#94a3b8', fontStyle: 'italic' }}>
+                        Nenhuma observação registrada ainda
+                      </p>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* Histórico Completo */}
+            <div>
+              <h3 style={{ color: '#f8fafc', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                📜 Histórico de Etapas ({historico.length})
+              </h3>
+
+              {historico.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>
+                  <div style={{ fontSize: '48px', marginBottom: '10px' }}>📭</div>
+                  <p>Nenhuma etapa registrada ainda</p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {historico.map((etapa, index) => {
+                    const etapaInfo = getEtapaInfo(etapa.etapa);
+                    const isExpandido = etapaExpandida === etapa.id;
+
+                    return (
+                      <div
+                        key={etapa.id}
+                        style={{
+                          background: index === 0 
+                            ? 'linear-gradient(135deg, #334155 0%, #1e293b 100%)'
+                            : '#1e293b',
+                          padding: '15px',
+                          borderRadius: '8px',
+                          border: `1px solid ${index === 0 ? etapaInfo.cor : '#334155'}`,
+                          cursor: 'pointer'
+                        }}
+                        onClick={() => toggleEtapa(etapa.id)}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <span style={{ fontSize: '24px' }}>{etapaInfo.icone}</span>
+                            <div>
+                              <div style={{ 
+                                color: '#f8fafc', 
+                                fontWeight: 'bold',
                                 display: 'flex',
                                 alignItems: 'center',
-                                gap: '10px',
-                                marginBottom: '8px'
+                                gap: '8px'
                               }}>
-                                <span style={{
-                                  color: '#f8fafc',
-                                  fontSize: '16px',
-                                  fontWeight: isAtual ? '600' : '500'
-                                }}>
-                                  {getNomeEtapa(etapa.etapa)}
-                                </span>
-                                <span style={{
-                                  backgroundColor: getCorStatus(etapa.status),
-                                  color: 'white',
-                                  padding: '4px 10px',
-                                  borderRadius: '12px',
-                                  fontSize: '12px',
-                                  fontWeight: 'bold'
-                                }}>
-                                  {getTextoStatus(etapa.status, index)}
-                                </span>
-                                {etapa.score && (
+                                {etapaInfo.nome}
+                                {index === 0 && (
                                   <span style={{
-                                    backgroundColor: etapa.score >= 70 ? '#10b981' : etapa.score >= 50 ? '#f59e0b' : '#ef4444',
-                                    color: 'white',
-                                    padding: '4px 10px',
+                                    background: etapaInfo.cor,
+                                    color: '#fff',
+                                    padding: '2px 8px',
                                     borderRadius: '12px',
-                                    fontSize: '12px',
-                                    fontWeight: 'bold'
+                                    fontSize: '10px'
                                   }}>
-                                    {etapa.score}/100
+                                    ATUAL
                                   </span>
                                 )}
                               </div>
-                              <div style={{
-                                fontSize: '13px',
-                                color: '#64748b',
-                                display: 'flex',
-                                gap: '12px'
-                              }}>
-                                <span>📅 {new Date(etapa.criado_em).toLocaleDateString('pt-BR')}</span>
-                                <span>⏱️ {calcularTempoNaEtapa(etapa.data_inicio, etapa.data_conclusao)}</span>
+                              <div style={{ color: '#94a3b8', fontSize: '12px', marginTop: '4px' }}>
+                                {formatarData(etapa.criado_em)}
                               </div>
                             </div>
-                            {!isAtual && (
-                              <div style={{
-                                color: '#94a3b8',
-                                fontSize: '18px',
-                                transform: isExpanded ? 'rotate(180deg)' : 'rotate(0)',
-                                transition: 'transform 0.2s'
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            {etapa.score && (
+                              <span style={{
+                                background: etapa.score >= 7 ? '#10b981' : etapa.score >= 5 ? '#f59e0b' : '#ef4444',
+                                color: '#fff',
+                                padding: '4px 10px',
+                                borderRadius: '12px',
+                                fontSize: '12px',
+                                fontWeight: 'bold'
                               }}>
-                                ▼
-                              </div>
+                                ⭐ {etapa.score}
+                              </span>
                             )}
+                            <span style={{ color: '#94a3b8', fontSize: '18px' }}>
+                              {isExpandido ? '▼' : '▶'}
+                            </span>
                           </div>
                         </div>
 
-                        {/* CONTEÚDO DA ETAPA ATUAL */}
-                        {isAtual && (
-                          <div style={{
-                            padding: '16px',
+                        {isExpandido && (
+                          <div style={{ 
+                            marginTop: '15px', 
+                            paddingTop: '15px', 
                             borderTop: '1px solid #334155'
                           }}>
-                            {editando ? (
-                              <div>
-                                <div style={{ marginBottom: '12px' }}>
-                                  <label style={{
-                                    display: 'block',
-                                    color: '#f8fafc',
-                                    marginBottom: '5px',
-                                    fontSize: '13px'
-                                  }}>
-                                    Pontuação (0-100)
-                                  </label>
-                                  <input
-                                    type="number"
-                                    min="0"
-                                    max="100"
-                                    value={formData.score}
-                                    onChange={(e) => setFormData({ ...formData, score: e.target.value })}
-                                    style={{
-                                      width: '100%',
-                                      padding: '8px',
-                                      backgroundColor: '#1e293b',
-                                      border: '1px solid #334155',
-                                      borderRadius: '6px',
-                                      color: '#f8fafc',
-                                      fontSize: '14px'
-                                    }}
-                                  />
-                                </div>
-
-                                <div style={{ marginBottom: '15px' }}>
-                                  <label style={{
-                                    display: 'block',
-                                    color: '#f8fafc',
-                                    marginBottom: '5px',
-                                    fontSize: '13px'
-                                  }}>
-                                    Observações
-                                  </label>
-                                  <textarea
-                                    value={formData.observacoes}
-                                    onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })}
-                                    placeholder="Adicione observações sobre o candidato nesta etapa..."
-                                    rows="4"
-                                    style={{
-                                      width: '100%',
-                                      padding: '8px',
-                                      backgroundColor: '#1e293b',
-                                      border: '1px solid #334155',
-                                      borderRadius: '6px',
-                                      color: '#f8fafc',
-                                      fontSize: '14px',
-                                      resize: 'vertical',
-                                      fontFamily: 'inherit'
-                                    }}
-                                  />
-                                </div>
-
-                                <div style={{ display: 'flex', gap: '10px' }}>
-                                  <button
-                                    onClick={salvarEdicao}
-                                    style={{
-                                      padding: '8px 16px',
-                                      backgroundColor: '#10b981',
-                                      color: 'white',
-                                      border: 'none',
-                                      borderRadius: '6px',
-                                      cursor: 'pointer',
-                                      fontSize: '14px',
-                                      fontWeight: '600'
-                                    }}
-                                  >
-                                    💾 Salvar
-                                  </button>
-                                  <button
-                                    onClick={() => setEditando(false)}
-                                    style={{
-                                      padding: '8px 16px',
-                                      backgroundColor: '#334155',
-                                      color: '#f8fafc',
-                                      border: 'none',
-                                      borderRadius: '6px',
-                                      cursor: 'pointer',
-                                      fontSize: '14px'
-                                    }}
-                                  >
-                                    Cancelar
-                                  </button>
-                                </div>
-                              </div>
-                            ) : (
-                              <div>
-                                {etapa.observacoes ? (
-                                  <div style={{
-                                    backgroundColor: '#1e293b',
-                                    padding: '12px',
-                                    borderRadius: '6px',
-                                    color: '#cbd5e1',
-                                    fontSize: '14px',
-                                    marginBottom: '12px',
-                                    lineHeight: '1.6',
-                                    border: '1px solid #334155'
-                                  }}>
-                                    {etapa.observacoes}
-                                  </div>
-                                ) : (
-                                  <p style={{
-                                    color: '#64748b',
-                                    fontSize: '13px',
-                                    fontStyle: 'italic',
-                                    marginBottom: '12px'
-                                  }}>
-                                    Nenhuma observação registrada
-                                  </p>
-                                )}
-
-                                <button
-                                  onClick={() => setEditando(true)}
-                                  style={{
-                                    padding: '8px 16px',
-                                    backgroundColor: '#3b82f6',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '6px',
-                                    cursor: 'pointer',
-                                    fontSize: '14px',
-                                    fontWeight: '600'
-                                  }}
-                                >
-                                  ✏️ Editar Feedback
-                                </button>
+                            {etapa.observacoes && (
+                              <div style={{ marginBottom: '10px' }}>
+                                <strong style={{ color: '#cbd5e1', fontSize: '13px' }}>Observações:</strong>
+                                <p style={{ color: '#94a3b8', marginTop: '5px', fontSize: '13px' }}>
+                                  {etapa.observacoes}
+                                </p>
                               </div>
                             )}
-                          </div>
-                        )}
 
-                        {/* CONTEÚDO EXPANDIDO DAS ETAPAS ANTERIORES */}
-                        {!isAtual && isExpanded && (
-                          <div style={{
-                            padding: '16px',
-                            borderTop: '1px solid #334155',
-                            backgroundColor: '#1e293b'
-                          }}>
-                            {etapa.observacoes ? (
-                              <div style={{
-                                color: '#cbd5e1',
-                                fontSize: '14px',
-                                lineHeight: '1.6'
-                              }}>
-                                {etapa.observacoes}
+                            {etapa.motivo_reprovacao && (
+                              <div>
+                                <strong style={{ color: '#ef4444', fontSize: '13px' }}>Motivo da Reprovação:</strong>
+                                <p style={{ color: '#94a3b8', marginTop: '5px', fontSize: '13px' }}>
+                                  {etapa.motivo_reprovacao.replace(/_/g, ' ').toUpperCase()}
+                                </p>
                               </div>
-                            ) : (
-                              <div style={{
-                                color: '#64748b',
-                                fontSize: '13px',
-                                fontStyle: 'italic'
-                              }}>
-                                Nenhuma observação registrada
-                              </div>
+                            )}
+
+                            {!etapa.observacoes && !etapa.motivo_reprovacao && (
+                              <p style={{ color: '#64748b', fontSize: '13px', fontStyle: 'italic' }}>
+                                Sem observações registradas
+                              </p>
                             )}
                           </div>
                         )}
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
-          )}
+          </>
+        )}
+
+        <div style={{ marginTop: '20px', textAlign: 'right' }}>
+          <button
+            onClick={onClose}
+            style={{
+              padding: '10px 24px',
+              background: '#475569',
+              color: '#f8fafc',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer'
+            }}
+          >
+            Fechar
+          </button>
         </div>
       </div>
     </div>

@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { supabase } from '../config/supabase';
+import { showSuccess, showError } from '../utils/toast';
+import { handleError } from '../utils/errorHandler';
 
-// Etapas do pipeline (mesmas do Kanban)
 const ETAPAS_PIPELINE = [
   { id: 'triagem', nome: 'Triagem', cor: '#3b82f6', icone: '📋' },
   { id: 'pre_entrevista', nome: 'Pré-entrevista', cor: '#8b5cf6', icone: '📝' },
@@ -37,10 +38,12 @@ export default function StatusDropdown({ candidato, onStatusChange }) {
       if (etapaError) throw etapaError;
 
       // 2. Atualizar campo cache no candidato
-      await supabase
+      const { error: updateError } = await supabase
         .from('candidatos')
         .update({ etapa_atual: novaEtapa })
         .eq('id', candidato.id);
+
+      if (updateError) throw updateError;
 
       // 3. Se mudou para "aprovado", atualizar status geral
       if (novaEtapa === 'aprovado') {
@@ -58,58 +61,71 @@ export default function StatusDropdown({ candidato, onStatusChange }) {
           .eq('id', candidato.id);
       }
 
+      // ✅ Toast de sucesso
+      const etapaInfo = ETAPAS_PIPELINE.find(e => e.id === novaEtapa);
+      showSuccess(`${etapaInfo.icone} Status atualizado para: ${etapaInfo.nome}`);
+
       // 5. Notificar componente pai para recarregar
       if (onStatusChange) {
         onStatusChange();
       }
-
-      console.log(`✅ Status atualizado: ${etapaAtual} → ${novaEtapa}`);
-
     } catch (error) {
-      console.error('Erro ao atualizar status:', error);
-      alert('Erro ao atualizar status');
+      handleError(error, 'Erro ao atualizar status');
+    } finally {
+      setSalvando(false);
     }
-
-    setSalvando(false);
   };
 
   const etapaInfo = ETAPAS_PIPELINE.find(e => e.id === etapaAtual);
 
   return (
-    <select
-      value={etapaAtual}
-      onChange={handleChangeStatus}
-      disabled={salvando}
-      style={{
-        padding: '6px 12px',
-        backgroundColor: etapaInfo?.cor || '#64748b',
-        color: 'white',
-        border: 'none',
-        borderRadius: '6px',
-        fontSize: '13px',
-        fontWeight: 'bold',
-        cursor: salvando ? 'wait' : 'pointer',
-        opacity: salvando ? 0.6 : 1,
-        appearance: 'none',
-        WebkitAppearance: 'none',
-        backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 12 12\'%3E%3Cpath fill=\'white\' d=\'M6 9L1 4h10z\'/%3E%3C/svg%3E")',
-        backgroundRepeat: 'no-repeat',
-        backgroundPosition: 'right 8px center',
-        paddingRight: '28px'
-      }}
-    >
-      {ETAPAS_PIPELINE.map(etapa => (
-        <option 
-          key={etapa.id} 
-          value={etapa.id}
-          style={{
-            backgroundColor: '#1e293b',
-            color: '#f8fafc'
-          }}
-        >
-          {etapa.icone} {etapa.nome}
-        </option>
-      ))}
-    </select>
+    <div style={{ position: 'relative' }}>
+      <select
+        value={etapaAtual}
+        onChange={handleChangeStatus}
+        disabled={salvando}
+        style={{
+          background: etapaInfo?.cor || '#334155',
+          color: '#fff',
+          border: 'none',
+          padding: '8px 12px',
+          borderRadius: '6px',
+          cursor: salvando ? 'not-allowed' : 'pointer',
+          fontSize: '14px',
+          fontWeight: 'bold',
+          opacity: salvando ? 0.6 : 1,
+          transition: 'all 0.3s ease',
+          minWidth: '180px'
+        }}
+      >
+        {ETAPAS_PIPELINE.map(etapa => (
+          <option 
+            key={etapa.id} 
+            value={etapa.id}
+            style={{ 
+              background: '#1e293b',
+              padding: '10px'
+            }}
+          >
+            {etapa.icone} {etapa.nome}
+          </option>
+        ))}
+      </select>
+      
+      {salvando && (
+        <div style={{
+          position: 'absolute',
+          top: '50%',
+          right: '10px',
+          transform: 'translateY(-50%)',
+          width: '16px',
+          height: '16px',
+          border: '2px solid rgba(255,255,255,0.3)',
+          borderTop: '2px solid #fff',
+          borderRadius: '50%',
+          animation: 'spin 0.6s linear infinite'
+        }} />
+      )}
+    </div>
   );
 }

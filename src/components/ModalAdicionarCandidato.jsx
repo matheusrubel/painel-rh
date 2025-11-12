@@ -1,5 +1,8 @@
 import { useState } from 'react';
 import { supabase } from '../config/supabase';
+import { candidatoSchema } from '../schemas/candidatoSchema';
+import { showSuccess, showError } from '../utils/toast';
+import { handleError } from '../utils/errorHandler';
 
 export default function ModalAdicionarCandidato({ isOpen, onClose, onCandidatoAdicionado }) {
   const [formData, setFormData] = useState({
@@ -21,6 +24,17 @@ export default function ModalAdicionarCandidato({ isOpen, onClose, onCandidatoAd
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        showError('Arquivo muito grande! Máximo 5MB');
+        return;
+      }
+      
+      const tiposPermitidos = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+      if (!tiposPermitidos.includes(file.type)) {
+        showError('Apenas arquivos PDF ou Word são permitidos');
+        return;
+      }
+
       setArquivo(file);
       setNomeArquivo(file.name);
     }
@@ -31,6 +45,8 @@ export default function ModalAdicionarCandidato({ isOpen, onClose, onCandidatoAd
     setCarregando(true);
 
     try {
+      const dadosValidados = candidatoSchema.parse(formData);
+
       let curriculo_url = '';
 
       if (arquivo) {
@@ -39,39 +55,51 @@ export default function ModalAdicionarCandidato({ isOpen, onClose, onCandidatoAd
           .from('curriculos')
           .upload(nomeUnico, arquivo);
 
-        if (uploadError) {
-          alert('Erro ao enviar currículo: ' + uploadError.message);
-          setCarregando(false);
-          return;
-        }
-        curriculo_url = nomeUnico;
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage
+          .from('curriculos')
+          .getPublicUrl(nomeUnico);
+
+        curriculo_url = urlData.publicUrl;
       }
 
       const { error } = await supabase.from('candidatos').insert([{
-        ...formData,
-        curriculo_url
+        ...dadosValidados,
+        curriculo_url,
+        etapa_atual: null,
+        status: 'novo'
       }]);
 
-      if (error) {
-        alert('Erro ao adicionar candidato: ' + error.message);
-      } else {
-        alert('Candidato adicionado com sucesso!');
-        setFormData({
-          nome_completo: '',
-          Email: '',
-          telefone: '',
-          cargo_pretendido: '',
-          mensagem: ''
-        });
-        setArquivo(null);
-        setNomeArquivo('');
+      if (error) throw error;
+
+      showSuccess('✅ Candidato adicionado com sucesso!');
+
+      setFormData({
+        nome_completo: '',
+        Email: '',
+        telefone: '',
+        cargo_pretendido: '',
+        mensagem: ''
+      });
+      setArquivo(null);
+      setNomeArquivo('');
+
+      if (onCandidatoAdicionado) {
         onCandidatoAdicionado();
-        onClose();
       }
+
+      onClose();
     } catch (err) {
-      alert('Erro: ' + err.message);
+      if (err.name === 'ZodError') {
+        const primeiroErro = err.errors[0];
+        showError(primeiroErro.message);
+      } else {
+        handleError(err, 'Erro ao adicionar candidato');
+      }
+    } finally {
+      setCarregando(false);
     }
-    setCarregando(false);
   };
 
   if (!isOpen) return null;
@@ -83,82 +111,34 @@ export default function ModalAdicionarCandidato({ isOpen, onClose, onCandidatoAd
       left: 0,
       right: 0,
       bottom: 0,
-      backgroundColor: 'rgba(0, 0, 0, 0.7)',
+      background: 'rgba(0,0,0,0.75)',
+      backdropFilter: 'blur(8px)',
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',
       zIndex: 1000,
-      animation: 'fadeIn 0.3s ease-out'
+      overflowY: 'auto'
     }}>
       <div style={{
-        backgroundColor: '#1e293b',
-        padding: '2rem',
-        borderRadius: '12px',
-        maxWidth: '500px',
+        background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
+        padding: '30px',
+        borderRadius: '16px',
+        maxWidth: '600px',
         width: '90%',
         maxHeight: '90vh',
         overflowY: 'auto',
-        boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.3)',
-        border: '1px solid #334155',
-        animation: 'slideIn 0.3s ease-out'
+        border: '1px solid #475569',
+        boxShadow: '0 25px 60px rgba(0,0,0,0.6)',
+        margin: '20px 0'
       }}>
-        {/* Header */}
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '1.5rem'
-        }}>
-          <h2 style={{
-            color: '#f8fafc',
-            fontSize: '1.5rem',
-            fontWeight: 700
-          }}>
-            Adicionar Candidato
-          </h2>
-          <button
-            onClick={onClose}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: '#94a3b8',
-              cursor: 'pointer',
-              padding: '0.5rem',
-              borderRadius: '6px',
-              transition: 'all 0.3s'
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.background = '#334155';
-              e.target.style.color = '#f8fafc';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.background = 'transparent';
-              e.target.style.color = '#94a3b8';
-            }}
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-          </button>
-        </div>
+        <h2 style={{ color: '#f8fafc', marginBottom: '20px', fontSize: '24px', fontWeight: '700' }}>
+          ➕ Adicionar Novo Candidato
+        </h2>
 
-        {/* Formulário */}
-        <form onSubmit={handleSubmit} style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '1.25rem'
-        }}>
-          {/* Nome Completo */}
-          <div>
-            <label style={{
-              display: 'block',
-              marginBottom: '0.5rem',
-              color: '#cbd5e1',
-              fontSize: '0.875rem',
-              fontWeight: 600
-            }}>
-              Nome Completo <span style={{ color: '#ef4444' }}>*</span>
+        <form onSubmit={handleSubmit}>
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ color: '#cbd5e1', display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600' }}>
+              Nome Completo *
             </label>
             <input
               type="text"
@@ -166,39 +146,32 @@ export default function ModalAdicionarCandidato({ isOpen, onClose, onCandidatoAd
               value={formData.nome_completo}
               onChange={handleChange}
               required
-              placeholder="Digite o nome completo"
+              placeholder="Ex: João Silva Santos"
               style={{
                 width: '100%',
-                padding: '0.75rem',
-                background: '#334155',
-                border: '1px solid #334155',
-                borderRadius: '8px',
+                padding: '12px',
+                background: 'rgba(15, 23, 42, 0.6)',
                 color: '#f8fafc',
-                fontSize: '0.875rem',
+                border: '1px solid rgba(71, 85, 105, 0.4)',
+                borderRadius: '10px',
+                fontSize: '14px',
                 outline: 'none',
-                transition: 'all 0.3s'
+                transition: 'all 0.2s ease'
               }}
               onFocus={(e) => {
-                e.target.style.borderColor = '#f59e0b';
-                e.target.style.boxShadow = '0 0 0 3px rgba(245, 158, 11, 0.1)';
+                e.target.style.borderColor = '#3b82f6';
+                e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
               }}
               onBlur={(e) => {
-                e.target.style.borderColor = '#334155';
+                e.target.style.borderColor = 'rgba(71, 85, 105, 0.4)';
                 e.target.style.boxShadow = 'none';
               }}
             />
           </div>
 
-          {/* Email */}
-          <div>
-            <label style={{
-              display: 'block',
-              marginBottom: '0.5rem',
-              color: '#cbd5e1',
-              fontSize: '0.875rem',
-              fontWeight: 600
-            }}>
-              E-mail <span style={{ color: '#ef4444' }}>*</span>
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ color: '#cbd5e1', display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600' }}>
+              Email *
             </label>
             <input
               type="email"
@@ -206,78 +179,67 @@ export default function ModalAdicionarCandidato({ isOpen, onClose, onCandidatoAd
               value={formData.Email}
               onChange={handleChange}
               required
-              placeholder="email@exemplo.com"
+              placeholder="exemplo@email.com"
               style={{
                 width: '100%',
-                padding: '0.75rem',
-                background: '#334155',
-                border: '1px solid #334155',
-                borderRadius: '8px',
+                padding: '12px',
+                background: 'rgba(15, 23, 42, 0.6)',
                 color: '#f8fafc',
-                fontSize: '0.875rem',
+                border: '1px solid rgba(71, 85, 105, 0.4)',
+                borderRadius: '10px',
+                fontSize: '14px',
                 outline: 'none',
-                transition: 'all 0.3s'
+                transition: 'all 0.2s ease'
               }}
               onFocus={(e) => {
-                e.target.style.borderColor = '#f59e0b';
-                e.target.style.boxShadow = '0 0 0 3px rgba(245, 158, 11, 0.1)';
+                e.target.style.borderColor = '#3b82f6';
+                e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
               }}
               onBlur={(e) => {
-                e.target.style.borderColor = '#334155';
+                e.target.style.borderColor = 'rgba(71, 85, 105, 0.4)';
                 e.target.style.boxShadow = 'none';
               }}
             />
           </div>
 
-          {/* Telefone */}
-          <div>
-            <label style={{
-              display: 'block',
-              marginBottom: '0.5rem',
-              color: '#cbd5e1',
-              fontSize: '0.875rem',
-              fontWeight: 600
-            }}>
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ color: '#cbd5e1', display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600' }}>
               Telefone
             </label>
             <input
-              type="text"
+              type="tel"
               name="telefone"
               value={formData.telefone}
               onChange={handleChange}
-              placeholder="(00) 00000-0000"
+              placeholder="(XX) XXXXX-XXXX"
               style={{
                 width: '100%',
-                padding: '0.75rem',
-                background: '#334155',
-                border: '1px solid #334155',
-                borderRadius: '8px',
+                padding: '12px',
+                background: 'rgba(15, 23, 42, 0.6)',
                 color: '#f8fafc',
-                fontSize: '0.875rem',
+                border: '1px solid rgba(71, 85, 105, 0.4)',
+                borderRadius: '10px',
+                fontSize: '14px',
                 outline: 'none',
-                transition: 'all 0.3s'
+                transition: 'all 0.2s ease'
               }}
               onFocus={(e) => {
-                e.target.style.borderColor = '#f59e0b';
-                e.target.style.boxShadow = '0 0 0 3px rgba(245, 158, 11, 0.1)';
+                e.target.style.borderColor = '#3b82f6';
+                e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
               }}
               onBlur={(e) => {
-                e.target.style.borderColor = '#334155';
+                e.target.style.borderColor = 'rgba(71, 85, 105, 0.4)';
                 e.target.style.boxShadow = 'none';
               }}
             />
+            <small style={{ color: '#94a3b8', fontSize: '12px' }}>
+              Formato: (XX) XXXXX-XXXX
+            </small>
           </div>
 
-          {/* Cargo Pretendido */}
-          <div>
-            <label style={{
-              display: 'block',
-              marginBottom: '0.5rem',
-              color: '#cbd5e1',
-              fontSize: '0.875rem',
-              fontWeight: 600
-            }}>
-              Cargo Pretendido <span style={{ color: '#ef4444' }}>*</span>
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ color: '#cbd5e1', display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600' }}>
+              Cargo Pretendido *
             </label>
             <input
               type="text"
@@ -285,216 +247,129 @@ export default function ModalAdicionarCandidato({ isOpen, onClose, onCandidatoAd
               value={formData.cargo_pretendido}
               onChange={handleChange}
               required
-              placeholder="Ex: Contador, Analista..."
+              placeholder="Ex: Desenvolvedor Full Stack"
               style={{
                 width: '100%',
-                padding: '0.75rem',
-                background: '#334155',
-                border: '1px solid #334155',
-                borderRadius: '8px',
+                padding: '12px',
+                background: 'rgba(15, 23, 42, 0.6)',
                 color: '#f8fafc',
-                fontSize: '0.875rem',
+                border: '1px solid rgba(71, 85, 105, 0.4)',
+                borderRadius: '10px',
+                fontSize: '14px',
                 outline: 'none',
-                transition: 'all 0.3s'
+                transition: 'all 0.2s ease'
               }}
               onFocus={(e) => {
-                e.target.style.borderColor = '#f59e0b';
-                e.target.style.boxShadow = '0 0 0 3px rgba(245, 158, 11, 0.1)';
+                e.target.style.borderColor = '#3b82f6';
+                e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
               }}
               onBlur={(e) => {
-                e.target.style.borderColor = '#334155';
+                e.target.style.borderColor = 'rgba(71, 85, 105, 0.4)';
                 e.target.style.boxShadow = 'none';
               }}
             />
           </div>
 
-          {/* Currículo */}
-          <div>
-            <label style={{
-              display: 'block',
-              marginBottom: '0.5rem',
-              color: '#cbd5e1',
-              fontSize: '0.875rem',
-              fontWeight: 600
-            }}>
-              Currículo
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ color: '#cbd5e1', display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600' }}>
+              Currículo (PDF ou Word - Máx 5MB)
             </label>
-            <div style={{
-              padding: '1.5rem',
-              border: '2px dashed #334155',
-              borderRadius: '8px',
-              backgroundColor: '#0f172a',
-              cursor: 'pointer',
-              textAlign: 'center',
-              transition: 'all 0.3s'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = '#f59e0b';
-              e.currentTarget.style.background = '#1e293b';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = '#334155';
-              e.currentTarget.style.background = '#0f172a';
-            }}
-            >
-              <input
-                type="file"
-                accept=".pdf,.doc,.docx"
-                onChange={handleFileChange}
-                style={{ display: 'none' }}
-                id="fileInput"
-              />
-              <label htmlFor="fileInput" style={{
+            <input
+              type="file"
+              accept=".pdf,.doc,.docx"
+              onChange={handleFileChange}
+              style={{
+                width: '100%',
+                padding: '12px',
+                background: 'rgba(15, 23, 42, 0.6)',
+                color: '#f8fafc',
+                border: '1px solid rgba(71, 85, 105, 0.4)',
+                borderRadius: '10px',
                 cursor: 'pointer',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: '0.5rem'
-              }}>
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={nomeArquivo ? '#10b981' : '#94a3b8'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                  <polyline points="17 8 12 3 7 8"></polyline>
-                  <line x1="12" y1="3" x2="12" y2="15"></line>
-                </svg>
-                <span style={{
-                  color: nomeArquivo ? '#10b981' : '#cbd5e1',
-                  fontSize: '0.875rem',
-                  fontWeight: 600
-                }}>
-                  {nomeArquivo ? `✅ ${nomeArquivo}` : 'Clique para selecionar arquivo'}
-                </span>
-                <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>
-                  PDF, DOC, DOCX
-                </span>
-              </label>
-            </div>
+                fontSize: '14px'
+              }}
+            />
+            {nomeArquivo && (
+              <div style={{ marginTop: '8px', color: '#10b981', fontSize: '12px' }}>
+                ✅ {nomeArquivo}
+              </div>
+            )}
           </div>
 
-          {/* Mensagem/Comentário */}
-          <div>
-            <label style={{
-              display: 'block',
-              marginBottom: '0.5rem',
-              color: '#cbd5e1',
-              fontSize: '0.875rem',
-              fontWeight: 600
-            }}>
-              Comentário (opcional)
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ color: '#cbd5e1', display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600' }}>
+              Mensagem / Observações
             </label>
             <textarea
               name="mensagem"
               value={formData.mensagem}
               onChange={handleChange}
-              placeholder="Observações sobre o candidato..."
-              rows="3"
+              rows={4}
+              placeholder="Informações adicionais sobre o candidato..."
               style={{
                 width: '100%',
-                padding: '0.75rem',
-                background: '#334155',
-                border: '1px solid #334155',
-                borderRadius: '8px',
+                padding: '12px',
+                background: 'rgba(15, 23, 42, 0.6)',
                 color: '#f8fafc',
-                fontSize: '0.875rem',
+                border: '1px solid rgba(71, 85, 105, 0.4)',
+                borderRadius: '10px',
+                resize: 'vertical',
+                fontSize: '14px',
+                fontFamily: 'inherit',
                 outline: 'none',
-                transition: 'all 0.3s',
-                fontFamily: 'Inter, sans-serif',
-                resize: 'vertical'
+                transition: 'all 0.2s ease'
               }}
               onFocus={(e) => {
-                e.target.style.borderColor = '#f59e0b';
-                e.target.style.boxShadow = '0 0 0 3px rgba(245, 158, 11, 0.1)';
+                e.target.style.borderColor = '#3b82f6';
+                e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
               }}
               onBlur={(e) => {
-                e.target.style.borderColor = '#334155';
+                e.target.style.borderColor = 'rgba(71, 85, 105, 0.4)';
                 e.target.style.boxShadow = 'none';
               }}
             />
           </div>
 
-          {/* Botões */}
-          <div style={{
-            display: 'flex',
-            gap: '0.75rem',
-            marginTop: '0.5rem'
-          }}>
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={carregando}
+              style={{
+                padding: '12px 28px',
+                background: 'rgba(71, 85, 105, 0.3)',
+                color: '#f1f5f9',
+                border: '1px solid rgba(71, 85, 105, 0.5)',
+                borderRadius: '10px',
+                cursor: carregando ? 'not-allowed' : 'pointer',
+                fontWeight: '600',
+                fontSize: '14px',
+                opacity: carregando ? 0.5 : 1,
+                transition: 'all 0.2s ease'
+              }}
+            >
+              Cancelar
+            </button>
             <button
               type="submit"
               disabled={carregando}
               style={{
-                flex: 1,
-                padding: '0.75rem 1.25rem',
-                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                padding: '12px 28px',
+                background: carregando 
+                  ? 'rgba(148, 163, 184, 0.3)' 
+                  : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
                 color: 'white',
                 border: 'none',
-                borderRadius: '8px',
-                fontWeight: 600,
-                fontSize: '0.875rem',
+                borderRadius: '10px',
                 cursor: carregando ? 'not-allowed' : 'pointer',
-                transition: 'all 0.3s',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.5rem',
-                boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
-              }}
-              onMouseEnter={(e) => {
-                if (!carregando) {
-                  e.target.style.transform = 'translateY(-2px)';
-                  e.target.style.boxShadow = '0 6px 20px rgba(16, 185, 129, 0.4)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.transform = 'translateY(0)';
-                e.target.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.3)';
+                fontWeight: '700',
+                fontSize: '14px',
+                opacity: carregando ? 0.6 : 1,
+                transition: 'all 0.2s ease',
+                boxShadow: carregando ? 'none' : '0 4px 12px rgba(16, 185, 129, 0.3)'
               }}
             >
-              {carregando ? (
-                <>
-                  <div style={{
-                    width: '16px',
-                    height: '16px',
-                    border: '2px solid rgba(255,255,255,0.3)',
-                    borderTopColor: 'white',
-                    borderRadius: '50%',
-                    animation: 'spin 1s linear infinite'
-                  }}></div>
-                  Salvando...
-                </>
-              ) : (
-                <>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
-                    <polyline points="7 3 7 8 15 8"></polyline>
-                  </svg>
-                  Salvar
-                </>
-              )}
-            </button>
-
-            <button
-              type="button"
-              onClick={onClose}
-              style={{
-                flex: 1,
-                padding: '0.75rem 1.25rem',
-                background: '#334155',
-                color: '#f8fafc',
-                border: 'none',
-                borderRadius: '8px',
-                fontWeight: 600,
-                fontSize: '0.875rem',
-                cursor: 'pointer',
-                transition: 'all 0.3s'
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.background = '#1e293b';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.background = '#334155';
-              }}
-            >
-              Cancelar
+              {carregando ? '⏳ Salvando...' : '✅ Adicionar Candidato'}
             </button>
           </div>
         </form>
