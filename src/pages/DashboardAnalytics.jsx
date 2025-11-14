@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useAnalytics } from '../hooks/useAnalytics';
+import { useTheme } from '../contexts/ThemeContext'; // ✅ NOVO
 import {
   PieChart, Pie, Cell, BarChart, Bar, LineChart, Line,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 
 export default function DashboardAnalytics() {
+  const { colors } = useTheme(); // ✅ NOVO
   const [periodo, setPeriodo] = useState('mes');
   const { 
     totalVagasAbertas,
@@ -37,12 +39,12 @@ export default function DashboardAnalytics() {
         <div style={{
           width: '50px',
           height: '50px',
-          border: '4px solid #334155',
-          borderTopColor: '#f59e0b',
+          border: `4px solid ${colors.bg.tertiary}`,
+          borderTopColor: colors.status.warning,
           borderRadius: '50%',
           animation: 'spin 1s linear infinite'
         }}></div>
-        <p style={{ color: '#94a3b8', fontSize: '16px' }}>Carregando analytics...</p>
+        <p style={{ color: colors.text.tertiary, fontSize: '16px' }}>Carregando analytics...</p>
       </div>
     );
   }
@@ -50,13 +52,13 @@ export default function DashboardAnalytics() {
   if (erro) {
     return (
       <div style={{ padding: '2rem', textAlign: 'center' }}>
-        <p style={{ color: '#ef4444', fontSize: '16px' }}>{erro}</p>
+        <p style={{ color: colors.status.error, fontSize: '16px' }}>{erro}</p>
         <button
           onClick={refetch}
           style={{
             marginTop: '1rem',
             padding: '10px 20px',
-            backgroundColor: '#f59e0b',
+            backgroundColor: colors.status.warning,
             color: 'white',
             border: 'none',
             borderRadius: '6px',
@@ -83,17 +85,17 @@ export default function DashboardAnalytics() {
         gap: '15px'
       }}>
         <div>
-          <h2 style={{ color: '#f8fafc', margin: 0, marginBottom: '5px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <h2 style={{ color: colors.text.primary, margin: 0, marginBottom: '5px', display: 'flex', alignItems: 'center', gap: '10px' }}>
             📊 Analytics & Métricas
           </h2>
-          <p style={{ color: '#94a3b8', fontSize: '14px', margin: 0 }}>
+          <p style={{ color: colors.text.tertiary, fontSize: '14px', margin: 0 }}>
             Visão geral do processo de recrutamento
           </p>
         </div>
 
         {/* Filtro de Período */}
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <label style={{ color: '#cbd5e1', fontSize: '14px', fontWeight: 'bold' }}>
+          <label style={{ color: colors.text.secondary, fontSize: '14px', fontWeight: 'bold' }}>
             Período:
           </label>
           <select
@@ -101,10 +103,10 @@ export default function DashboardAnalytics() {
             onChange={(e) => setPeriodo(e.target.value)}
             style={{
               padding: '8px 16px',
-              backgroundColor: '#334155',
-              border: '1px solid #475569',
+              backgroundColor: colors.bg.tertiary,
+              border: `1px solid ${colors.border.primary}`,
               borderRadius: '6px',
-              color: '#f8fafc',
+              color: colors.text.primary,
               fontSize: '14px',
               cursor: 'pointer',
               fontWeight: 'bold'
@@ -131,6 +133,7 @@ export default function DashboardAnalytics() {
           icone="📋"
           cor="#3b82f6"
           sufixo=""
+          colors={colors}
         />
         <MetricCard
           titulo="Candidatos Ativos"
@@ -138,6 +141,7 @@ export default function DashboardAnalytics() {
           icone="👥"
           cor="#10b981"
           sufixo=""
+          colors={colors}
         />
         <MetricCard
           titulo="Tempo Médio"
@@ -145,6 +149,7 @@ export default function DashboardAnalytics() {
           icone="⏱️"
           cor="#f59e0b"
           sufixo={tempoMedioContratacao === 1 ? " dia" : " dias"}
+          colors={colors}
         />
         <MetricCard
           titulo="Taxa Conversão"
@@ -152,6 +157,7 @@ export default function DashboardAnalytics() {
           icone="📈"
           cor="#8b5cf6"
           sufixo="%"
+          colors={colors}
         />
       </div>
 
@@ -163,12 +169,13 @@ export default function DashboardAnalytics() {
       }}>
         {/* Gráfico 1: Vagas por Status (Pizza) */}
         <div style={{
-          backgroundColor: '#1e293b',
-          border: '1px solid #334155',
+          backgroundColor: colors.bg.secondary,
+          border: `1px solid ${colors.border.primary}`,
           borderRadius: '12px',
-          padding: '20px'
+          padding: '20px',
+          boxShadow: colors.shadow.sm
         }}>
-          <h3 style={{ color: '#fbbf24', marginBottom: '20px', fontSize: '16px' }}>
+          <h3 style={{ color: colors.status.warning, marginBottom: '20px', fontSize: '16px' }}>
             📊 Vagas por Status
           </h3>
           <ResponsiveContainer width="100%" height={250}>
@@ -189,10 +196,10 @@ export default function DashboardAnalytics() {
               </Pie>
               <Tooltip 
                 contentStyle={{ 
-                  backgroundColor: '#1e293b', 
-                  border: '1px solid #334155',
+                  backgroundColor: colors.bg.secondary, 
+                  border: `1px solid ${colors.border.primary}`,
                   borderRadius: '6px',
-                  color: '#f8fafc'
+                  color: colors.text.primary
                 }}
               />
             </PieChart>
@@ -201,25 +208,26 @@ export default function DashboardAnalytics() {
 
         {/* Gráfico 2: Candidatos por Etapa (Funil) */}
         <div style={{
-          backgroundColor: '#1e293b',
-          border: '1px solid #334155',
+          backgroundColor: colors.bg.secondary,
+          border: `1px solid ${colors.border.primary}`,
           borderRadius: '12px',
-          padding: '20px'
+          padding: '20px',
+          boxShadow: colors.shadow.sm
         }}>
-          <h3 style={{ color: '#fbbf24', marginBottom: '20px', fontSize: '16px' }}>
+          <h3 style={{ color: colors.status.warning, marginBottom: '20px', fontSize: '16px' }}>
             🎯 Pipeline de Candidatos
           </h3>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={candidatosPorEtapa} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-              <XAxis type="number" stroke="#94a3b8" />
-              <YAxis dataKey="name" type="category" width={120} stroke="#94a3b8" />
+              <CartesianGrid strokeDasharray="3 3" stroke={colors.border.secondary} />
+              <XAxis type="number" stroke={colors.text.tertiary} />
+              <YAxis dataKey="name" type="category" width={120} stroke={colors.text.tertiary} />
               <Tooltip 
                 contentStyle={{ 
-                  backgroundColor: '#1e293b', 
-                  border: '1px solid #334155',
+                  backgroundColor: colors.bg.secondary, 
+                  border: `1px solid ${colors.border.primary}`,
                   borderRadius: '6px',
-                  color: '#f8fafc'
+                  color: colors.text.primary
                 }}
               />
               <Bar dataKey="value" fill="#f59e0b" radius={[0, 8, 8, 0]} />
@@ -229,25 +237,26 @@ export default function DashboardAnalytics() {
 
         {/* Gráfico 3: Vagas por Cidade (Barras) */}
         <div style={{
-          backgroundColor: '#1e293b',
-          border: '1px solid #334155',
+          backgroundColor: colors.bg.secondary,
+          border: `1px solid ${colors.border.primary}`,
           borderRadius: '12px',
-          padding: '20px'
+          padding: '20px',
+          boxShadow: colors.shadow.sm
         }}>
-          <h3 style={{ color: '#fbbf24', marginBottom: '20px', fontSize: '16px' }}>
+          <h3 style={{ color: colors.status.warning, marginBottom: '20px', fontSize: '16px' }}>
             📍 Vagas por Localização
           </h3>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={vagasPorCidade}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-              <XAxis dataKey="name" stroke="#94a3b8" />
-              <YAxis stroke="#94a3b8" />
+              <CartesianGrid strokeDasharray="3 3" stroke={colors.border.secondary} />
+              <XAxis dataKey="name" stroke={colors.text.tertiary} />
+              <YAxis stroke={colors.text.tertiary} />
               <Tooltip 
                 contentStyle={{ 
-                  backgroundColor: '#1e293b', 
-                  border: '1px solid #334155',
+                  backgroundColor: colors.bg.secondary, 
+                  border: `1px solid ${colors.border.primary}`,
                   borderRadius: '6px',
-                  color: '#f8fafc'
+                  color: colors.text.primary
                 }}
               />
               <Bar dataKey="value" fill="#10b981" radius={[8, 8, 0, 0]} />
@@ -257,29 +266,30 @@ export default function DashboardAnalytics() {
 
         {/* Gráfico 4: Evolução Mensal (Linha) */}
         <div style={{
-          backgroundColor: '#1e293b',
-          border: '1px solid #334155',
+          backgroundColor: colors.bg.secondary,
+          border: `1px solid ${colors.border.primary}`,
           borderRadius: '12px',
-          padding: '20px'
+          padding: '20px',
+          boxShadow: colors.shadow.sm
         }}>
-          <h3 style={{ color: '#fbbf24', marginBottom: '20px', fontSize: '16px' }}>
+          <h3 style={{ color: colors.status.warning, marginBottom: '20px', fontSize: '16px' }}>
             📈 Evolução Mensal
           </h3>
           <ResponsiveContainer width="100%" height={250}>
             <LineChart data={evolucaoMensal}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-              <XAxis dataKey="mes" stroke="#94a3b8" />
-              <YAxis stroke="#94a3b8" />
+              <CartesianGrid strokeDasharray="3 3" stroke={colors.border.secondary} />
+              <XAxis dataKey="mes" stroke={colors.text.tertiary} />
+              <YAxis stroke={colors.text.tertiary} />
               <Tooltip 
                 contentStyle={{ 
-                  backgroundColor: '#1e293b', 
-                  border: '1px solid #334155',
+                  backgroundColor: colors.bg.secondary, 
+                  border: `1px solid ${colors.border.primary}`,
                   borderRadius: '6px',
-                  color: '#f8fafc'
+                  color: colors.text.primary
                 }}
               />
               <Legend 
-                wrapperStyle={{ color: '#f8fafc' }}
+                wrapperStyle={{ color: colors.text.primary }}
                 iconType="line"
               />
               <Line 
@@ -314,7 +324,7 @@ export default function DashboardAnalytics() {
 }
 
 // Componente de Card de Métrica
-function MetricCard({ titulo, valor, icone, cor, sufixo = '' }) {
+function MetricCard({ titulo, valor, icone, cor, sufixo = '', colors }) {
   return (
     <div style={{
       background: `linear-gradient(135deg, ${cor}15 0%, ${cor}05 100%)`,
@@ -325,7 +335,8 @@ function MetricCard({ titulo, valor, icone, cor, sufixo = '' }) {
       flexDirection: 'column',
       gap: '12px',
       transition: 'transform 0.3s, box-shadow 0.3s',
-      cursor: 'default'
+      cursor: 'default',
+      boxShadow: colors.shadow.sm
     }}
     onMouseEnter={(e) => {
       e.currentTarget.style.transform = 'translateY(-4px)';
@@ -333,12 +344,12 @@ function MetricCard({ titulo, valor, icone, cor, sufixo = '' }) {
     }}
     onMouseLeave={(e) => {
       e.currentTarget.style.transform = 'translateY(0)';
-      e.currentTarget.style.boxShadow = 'none';
+      e.currentTarget.style.boxShadow = colors.shadow.sm;
     }}
     >
       {/* Header do Card */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span style={{ color: '#94a3b8', fontSize: '14px', fontWeight: 600 }}>
+        <span style={{ color: colors.text.tertiary, fontSize: '14px', fontWeight: 600 }}>
           {titulo}
         </span>
         <span style={{ fontSize: '24px' }}>{icone}</span>
@@ -356,7 +367,7 @@ function MetricCard({ titulo, valor, icone, cor, sufixo = '' }) {
         </span>
         {sufixo && (
           <span style={{
-            color: '#94a3b8',
+            color: colors.text.tertiary,
             fontSize: '16px',
             fontWeight: 600
           }}>

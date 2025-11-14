@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../config/supabase';
 import ModalCriarVaga from '../components/ModalCriarVaga';
+import { useTheme } from '../contexts/ThemeContext'; // ✅ NOVO
 
 export default function GestaoVagas() {
+  const { colors } = useTheme(); // ✅ NOVO
   const [vagas, setVagas] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [modalAberto, setModalAberto] = useState(false);
@@ -90,12 +92,12 @@ export default function GestaoVagas() {
         <div style={{
           width: '40px',
           height: '40px',
-          border: '3px solid #334155',
-          borderTopColor: '#f59e0b',
+          border: `3px solid ${colors.bg.tertiary}`,
+          borderTopColor: colors.status.warning,
           borderRadius: '50%',
           animation: 'spin 1s linear infinite'
         }}></div>
-        <p style={{ color: '#94a3b8' }}>Carregando vagas...</p>
+        <p style={{ color: colors.text.tertiary }}>Carregando vagas...</p>
       </div>
     );
   }
@@ -104,8 +106,8 @@ export default function GestaoVagas() {
     <div style={{ padding: '20px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
         <div>
-          <h2 style={{ color: '#f8fafc', marginBottom: '5px' }}>Gestão de Vagas</h2>
-          <p style={{ color: '#94a3b8', fontSize: '14px' }}>
+          <h2 style={{ color: colors.text.primary, marginBottom: '5px' }}>Gestão de Vagas</h2>
+          <p style={{ color: colors.text.tertiary, fontSize: '14px' }}>
             {vagas.length} vaga(s) cadastrada(s)
           </p>
         </div>
@@ -143,15 +145,15 @@ export default function GestaoVagas() {
         <div style={{ 
           textAlign: 'center', 
           padding: '50px', 
-          backgroundColor: '#1e293b',
+          backgroundColor: colors.bg.secondary,
           borderRadius: '12px',
-          border: '1px dashed #334155'
+          border: `1px dashed ${colors.border.secondary}`
         }}>
           <p style={{ fontSize: '48px', marginBottom: '10px' }}>📋</p>
-          <p style={{ color: '#cbd5e1', fontSize: '18px', fontWeight: 'bold', marginBottom: '5px' }}>
+          <p style={{ color: colors.text.secondary, fontSize: '18px', fontWeight: 'bold', marginBottom: '5px' }}>
             Nenhuma vaga cadastrada
           </p>
-          <p style={{ color: '#64748b', fontSize: '14px' }}>
+          <p style={{ color: colors.text.muted, fontSize: '14px' }}>
             Clique em "Criar Nova Vaga" para começar!
           </p>
         </div>
@@ -159,11 +161,12 @@ export default function GestaoVagas() {
         <div style={{ display: 'grid', gap: '15px' }}>
           {vagas.map(vaga => (
             <div key={vaga.id} style={{
-              border: '1px solid #334155',
+              border: `1px solid ${colors.border.primary}`,
               borderRadius: '8px',
-              backgroundColor: vaga.ativa ? '#1e293b' : '#0f172a',
+              backgroundColor: vaga.ativa ? colors.bg.secondary : colors.bg.primary,
               overflow: 'hidden',
-              transition: 'all 0.3s'
+              transition: 'all 0.3s',
+              boxShadow: colors.shadow.sm
             }}>
               {/* Card Header */}
               <div 
@@ -175,12 +178,12 @@ export default function GestaoVagas() {
                   padding: '15px 20px',
                   cursor: 'pointer',
                   transition: 'background-color 0.2s',
-                  backgroundColor: vagaExpandida === vaga.id ? '#334155' : 'transparent'
+                  backgroundColor: vagaExpandida === vaga.id ? colors.bg.tertiary : 'transparent'
                 }}
               >
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-                    <h3 style={{ margin: 0, color: '#f8fafc', fontSize: '18px' }}>
+                    <h3 style={{ margin: 0, color: colors.text.primary, fontSize: '18px' }}>
                       {vaga.titulo}
                     </h3>
                     
@@ -199,7 +202,7 @@ export default function GestaoVagas() {
                     )}
                   </div>
 
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', fontSize: '13px', color: '#94a3b8' }}>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', fontSize: '13px', color: colors.text.tertiary }}>
                     {vaga.area_setor && <span>💼 {vaga.area_setor}</span>}
                     {vaga.nivel && <span>📊 {vaga.nivel}</span>}
                     {vaga.local && <span>📍 {vaga.local}</span>}
@@ -215,7 +218,7 @@ export default function GestaoVagas() {
                     )}
                   </div>
 
-                  <div style={{ fontSize: '12px', color: '#64748b', marginTop: '5px' }}>
+                  <div style={{ fontSize: '12px', color: colors.text.muted, marginTop: '5px' }}>
                     📅 {new Date(vaga.criado_em).toLocaleDateString('pt-BR')}
                     {vaga.prazo_fechamento && (
                       <span style={{ marginLeft: '12px', color: '#f59e0b' }}>
@@ -237,7 +240,7 @@ export default function GestaoVagas() {
                     {vaga.ativa ? '✅ ATIVA' : '⏸️ INATIVA'}
                   </div>
                   
-                  <span style={{ fontSize: '20px', color: '#94a3b8' }}>
+                  <span style={{ fontSize: '20px', color: colors.text.tertiary }}>
                     {vagaExpandida === vaga.id ? '▲' : '▼'}
                   </span>
                 </div>
@@ -247,7 +250,7 @@ export default function GestaoVagas() {
               {vagaExpandida === vaga.id && (
                 <div style={{ 
                   padding: '20px', 
-                  borderTop: '1px solid #334155',
+                  borderTop: `1px solid ${colors.border.primary}`,
                   animation: 'slideDown 0.3s ease-out'
                 }}>
                   {/* Informações Principais */}
@@ -257,19 +260,20 @@ export default function GestaoVagas() {
                     gap: '15px',
                     marginBottom: '20px',
                     padding: '15px',
-                    backgroundColor: '#0f172a',
-                    borderRadius: '8px'
+                    backgroundColor: colors.bg.primary,
+                    borderRadius: '8px',
+                    border: `1px solid ${colors.border.light}`
                   }}>
                     {vaga.carga_horaria && (
                       <div>
-                        <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '3px' }}>CARGA HORÁRIA</div>
-                        <div style={{ color: '#f8fafc', fontWeight: 'bold' }}>⏰ {vaga.carga_horaria}</div>
+                        <div style={{ fontSize: '11px', color: colors.text.muted, marginBottom: '3px' }}>CARGA HORÁRIA</div>
+                        <div style={{ color: colors.text.primary, fontWeight: 'bold' }}>⏰ {vaga.carga_horaria}</div>
                       </div>
                     )}
                     
                     {(vaga.faixa_salarial_min || vaga.faixa_salarial_max) && (
                       <div>
-                        <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '3px' }}>REMUNERAÇÃO</div>
+                        <div style={{ fontSize: '11px', color: colors.text.muted, marginBottom: '3px' }}>REMUNERAÇÃO</div>
                         <div style={{ color: '#10b981', fontWeight: 'bold' }}>
                           💰 {formatarSalario(vaga.faixa_salarial_min, vaga.faixa_salarial_max)}
                         </div>
@@ -279,17 +283,17 @@ export default function GestaoVagas() {
 
                   {vaga.descricao && (
                     <div style={{ marginBottom: '15px' }}>
-                      <strong style={{ color: '#fbbf24', display: 'block', marginBottom: '8px' }}>📝 Descrição:</strong>
-                      <p style={{ color: '#cbd5e1', lineHeight: '1.6', margin: 0 }}>{vaga.descricao}</p>
+                      <strong style={{ color: colors.status.warning, display: 'block', marginBottom: '8px' }}>📝 Descrição:</strong>
+                      <p style={{ color: colors.text.secondary, lineHeight: '1.6', margin: 0 }}>{vaga.descricao}</p>
                     </div>
                   )}
 
                   {vaga.atribuicoes && vaga.atribuicoes.length > 0 && (
                     <div style={{ marginBottom: '15px' }}>
-                      <strong style={{ color: '#fbbf24', display: 'block', marginBottom: '8px' }}>✅ Atribuições:</strong>
+                      <strong style={{ color: colors.status.warning, display: 'block', marginBottom: '8px' }}>✅ Atribuições:</strong>
                       <ul style={{ marginTop: '5px', paddingLeft: '20px' }}>
                         {vaga.atribuicoes.map((attr, i) => (
-                          <li key={i} style={{ color: '#cbd5e1', marginBottom: '5px' }}>{attr}</li>
+                          <li key={i} style={{ color: colors.text.secondary, marginBottom: '5px' }}>{attr}</li>
                         ))}
                       </ul>
                     </div>
@@ -297,10 +301,10 @@ export default function GestaoVagas() {
 
                   {vaga.requisitos && vaga.requisitos.length > 0 && (
                     <div style={{ marginBottom: '15px' }}>
-                      <strong style={{ color: '#fbbf24', display: 'block', marginBottom: '8px' }}>📋 Requisitos:</strong>
+                      <strong style={{ color: colors.status.warning, display: 'block', marginBottom: '8px' }}>📋 Requisitos:</strong>
                       <ul style={{ marginTop: '5px', paddingLeft: '20px' }}>
                         {vaga.requisitos.map((req, i) => (
-                          <li key={i} style={{ color: '#cbd5e1', marginBottom: '5px' }}>{req}</li>
+                          <li key={i} style={{ color: colors.text.secondary, marginBottom: '5px' }}>{req}</li>
                         ))}
                       </ul>
                     </div>
@@ -308,10 +312,10 @@ export default function GestaoVagas() {
 
                   {vaga.beneficios && vaga.beneficios.length > 0 && (
                     <div style={{ marginBottom: '15px' }}>
-                      <strong style={{ color: '#fbbf24', display: 'block', marginBottom: '8px' }}>🎁 Benefícios:</strong>
+                      <strong style={{ color: colors.status.warning, display: 'block', marginBottom: '8px' }}>🎁 Benefícios:</strong>
                       <ul style={{ marginTop: '5px', paddingLeft: '20px' }}>
                         {vaga.beneficios.map((ben, i) => (
-                          <li key={i} style={{ color: '#cbd5e1', marginBottom: '5px' }}>{ben}</li>
+                          <li key={i} style={{ color: colors.text.secondary, marginBottom: '5px' }}>{ben}</li>
                         ))}
                       </ul>
                     </div>
@@ -328,7 +332,7 @@ export default function GestaoVagas() {
                       <strong style={{ color: '#f59e0b', display: 'block', marginBottom: '8px' }}>
                         🔒 Observações Internas (RH):
                       </strong>
-                      <p style={{ color: '#cbd5e1', margin: 0, fontSize: '14px' }}>{vaga.observacoes_internas}</p>
+                      <p style={{ color: colors.text.secondary, margin: 0, fontSize: '14px' }}>{vaga.observacoes_internas}</p>
                     </div>
                   )}
 
@@ -338,7 +342,7 @@ export default function GestaoVagas() {
                     gap: '10px', 
                     marginTop: '20px', 
                     paddingTop: '15px', 
-                    borderTop: '1px solid #334155',
+                    borderTop: `1px solid ${colors.border.primary}`,
                     flexWrap: 'wrap'
                   }}>
                     <button

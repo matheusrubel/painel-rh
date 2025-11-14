@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '../config/supabase';
+import { useTheme } from '../contexts/ThemeContext'; // ✅ NOVO
 import TabelaCandidatos from '../components/TabelaCandidatos';
 import ModalAdicionarCandidato from '../components/ModalAdicionarCandidato';
 import NotificationBell from '../components/NotificationBell';
@@ -11,6 +12,7 @@ import DashboardAnalytics from './DashboardAnalytics';
 import HistoricoCandidatos from './HistoricoCandidatos';
 
 export default function Dashboard() {
+  const { colors } = useTheme(); // ✅ NOVO
   const [modalAberto, setModalAberto] = useState(false);
   const [recarregar, setRecarregar] = useState(false);
   const [paginaAtual, setPaginaAtual] = useState('candidatos');
@@ -27,15 +29,15 @@ export default function Dashboard() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'var(--gradient-primary)',
-      color: 'var(--text-primary)'
+      background: colors.bg.primary,
+      color: colors.text.primary
     }}>
       {/* Header */}
       <header style={{
-        background: 'var(--gradient-secondary)',
+        background: colors.bg.secondary,
         padding: '20px 30px',
-        borderBottom: '1px solid var(--border-color)',
-        boxShadow: 'var(--shadow-md)',
+        borderBottom: `1px solid ${colors.border.primary}`,
+        boxShadow: colors.shadow.md,
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center'
@@ -46,14 +48,14 @@ export default function Dashboard() {
             fontSize: '24px',
             fontWeight: '700',
             letterSpacing: '-0.02em',
-            color: 'var(--text-primary)'
+            color: colors.text.primary
           }}>
             Michelc Assessoria Contábil
           </h1>
           <p style={{ 
             margin: '4px 0 0 0', 
             fontSize: '14px', 
-            color: 'var(--text-tertiary)' 
+            color: colors.text.tertiary
           }}>
             Sistema ATS - Recrutamento & Seleção
           </p>
@@ -89,10 +91,10 @@ export default function Dashboard() {
 
       {/* Navigation */}
       <nav style={{
-        background: 'var(--bg-secondary)',
+        background: colors.bg.secondary,
         backdropFilter: 'blur(10px)',
         padding: '15px 30px',
-        borderBottom: '1px solid var(--border-color)',
+        borderBottom: `1px solid ${colors.border.primary}`,
         display: 'flex',
         gap: '10px',
         overflowX: 'auto'
@@ -111,30 +113,30 @@ export default function Dashboard() {
             style={{
               padding: '10px 20px',
               background: paginaAtual === item.id 
-                ? 'var(--gradient-accent)' 
-                : 'var(--bg-tertiary)',
-              color: paginaAtual === item.id ? '#fff' : 'var(--text-secondary)',
+                ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' 
+                : colors.bg.tertiary,
+              color: paginaAtual === item.id ? '#fff' : colors.text.secondary,
               border: paginaAtual === item.id 
                 ? 'none' 
-                : '1px solid var(--border-color)',
+                : `1px solid ${colors.border.primary}`,
               borderRadius: '8px',
               cursor: 'pointer',
               fontSize: '14px',
               fontWeight: '600',
               whiteSpace: 'nowrap',
               boxShadow: paginaAtual === item.id 
-                ? 'var(--shadow-md)' 
+                ? colors.shadow.md 
                 : 'none',
               transition: 'all 0.3s ease'
             }}
             onMouseEnter={(e) => {
               if (paginaAtual !== item.id) {
-                e.target.style.background = 'var(--bg-quaternary)';
+                e.target.style.background = colors.bg.hover;
               }
             }}
             onMouseLeave={(e) => {
               if (paginaAtual !== item.id) {
-                e.target.style.background = 'var(--bg-tertiary)';
+                e.target.style.background = colors.bg.tertiary;
               }
             }}
           >
@@ -154,7 +156,7 @@ export default function Dashboard() {
               marginBottom: '20px'
             }}>
               <h2 style={{ 
-                color: 'var(--text-primary)', 
+                color: colors.text.primary, 
                 margin: 0,
                 fontSize: '22px',
                 fontWeight: '700'
@@ -166,14 +168,15 @@ export default function Dashboard() {
                 style={{
                   padding: '12px 24px',
                   background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                  color: 'white',
+                  color: '#ffffff', // ✅ Branco puro
                   border: 'none',
                   borderRadius: '10px',
                   cursor: 'pointer',
                   fontSize: '14px',
                   fontWeight: '700',
                   boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
-                  transition: 'all 0.3s ease'
+                  transition: 'all 0.3s ease',
+                  opacity: 1 // ✅ Garantir opacidade total
                 }}
                 onMouseEnter={(e) => {
                   e.target.style.transform = 'translateY(-2px)';
