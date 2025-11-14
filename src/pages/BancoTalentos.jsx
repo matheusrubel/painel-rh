@@ -3,7 +3,7 @@ import { supabase } from '../config/supabase';
 import { showSuccess, showError } from '../utils/toast';
 import { handleError } from '../utils/errorHandler';
 
-// ========== MODAL DE CONFIRMAÇÃO MODERNO ==========
+// Modal de Confirmação
 function ModalConfirmacao({ isOpen, onClose, onConfirm, titulo, mensagem, tipo = 'remover', carregando }) {
   if (!isOpen) return null;
 
@@ -21,7 +21,7 @@ function ModalConfirmacao({ isOpen, onClose, onConfirm, titulo, mensagem, tipo =
       left: 0,
       right: 0,
       bottom: 0,
-      background: 'rgba(0,0,0,0.75)',
+      background: 'var(--overlay-bg)',
       backdropFilter: 'blur(8px)',
       display: 'flex',
       justifyContent: 'center',
@@ -30,13 +30,13 @@ function ModalConfirmacao({ isOpen, onClose, onConfirm, titulo, mensagem, tipo =
       animation: 'fadeIn 0.2s ease-out'
     }}>
       <div style={{
-        background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
+        background: 'var(--gradient-secondary)',
         borderRadius: '16px',
         padding: '30px',
         maxWidth: '500px',
         width: '90%',
         border: `1px solid ${config.bg}40`,
-        boxShadow: `0 25px 60px ${config.bg}20`,
+        boxShadow: `var(--shadow-xl)`,
         animation: 'slideUp 0.3s ease-out'
       }}>
         <div style={{ textAlign: 'center', marginBottom: '24px' }}>
@@ -54,7 +54,7 @@ function ModalConfirmacao({ isOpen, onClose, onConfirm, titulo, mensagem, tipo =
             {tipo === 'deletar' ? '🗑️' : '❌'}
           </div>
           <h2 style={{ 
-            color: '#f8fafc', 
+            color: 'var(--text-primary)', 
             margin: '0 0 12px 0',
             fontSize: '22px',
             fontWeight: '700'
@@ -62,7 +62,7 @@ function ModalConfirmacao({ isOpen, onClose, onConfirm, titulo, mensagem, tipo =
             {titulo}
           </h2>
           <p style={{ 
-            color: '#94a3b8', 
+            color: 'var(--text-tertiary)', 
             margin: 0,
             fontSize: '15px',
             lineHeight: '1.6'
@@ -81,21 +81,14 @@ function ModalConfirmacao({ isOpen, onClose, onConfirm, titulo, mensagem, tipo =
             disabled={carregando}
             style={{
               padding: '12px 28px',
-              background: 'rgba(71, 85, 105, 0.3)',
-              color: '#f1f5f9',
-              border: '1px solid rgba(71, 85, 105, 0.5)',
+              background: 'var(--bg-tertiary)',
+              color: 'var(--text-primary)',
+              border: '1px solid var(--border-color)',
               borderRadius: '10px',
               cursor: carregando ? 'not-allowed' : 'pointer',
               fontWeight: '600',
               fontSize: '14px',
-              opacity: carregando ? 0.5 : 1,
-              transition: 'all 0.2s ease'
-            }}
-            onMouseEnter={(e) => {
-              if (!carregando) e.target.style.background = 'rgba(71, 85, 105, 0.5)';
-            }}
-            onMouseLeave={(e) => {
-              if (!carregando) e.target.style.background = 'rgba(71, 85, 105, 0.3)';
+              opacity: carregando ? 0.5 : 1
             }}
           >
             Cancelar
@@ -115,32 +108,12 @@ function ModalConfirmacao({ isOpen, onClose, onConfirm, titulo, mensagem, tipo =
               fontWeight: '700',
               fontSize: '14px',
               opacity: carregando ? 0.6 : 1,
-              transition: 'all 0.2s ease',
               boxShadow: carregando ? 'none' : `0 4px 12px ${config.bg}40`
-            }}
-            onMouseEnter={(e) => {
-              if (!carregando) {
-                e.target.style.transform = 'translateY(-2px)';
-                e.target.style.boxShadow = `0 6px 20px ${config.bg}60`;
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!carregando) {
-                e.target.style.transform = 'translateY(0)';
-                e.target.style.boxShadow = `0 4px 12px ${config.bg}40`;
-              }
             }}
           >
             {carregando ? (
               <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{
-                  width: '14px',
-                  height: '14px',
-                  border: '2px solid rgba(255,255,255,0.3)',
-                  borderTopColor: '#fff',
-                  borderRadius: '50%',
-                  animation: 'spin 0.8s linear infinite'
-                }} />
+                <span className="spinner" style={{ width: '14px', height: '14px' }} />
                 Processando...
               </span>
             ) : `${tipo === 'deletar' ? '🗑️' : '❌'} ${config.texto}`}
@@ -163,23 +136,20 @@ function ModalConfirmacao({ isOpen, onClose, onConfirm, titulo, mensagem, tipo =
             transform: translateY(0);
           }
         }
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
       `}</style>
     </div>
   );
 }
 
-// ========== COMPONENTE PRINCIPAL ==========
+// Componente Principal
 export default function BancoTalentos() {
   const [talentos, setTalentos] = useState([]);
+  const [talentosHistorico, setTalentosHistorico] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [talentoExpandido, setTalentoExpandido] = useState(null);
   const [filtroSetor, setFiltroSetor] = useState('todos');
   const [busca, setBusca] = useState('');
   
-  // Estados dos modais
   const [modalRemover, setModalRemover] = useState({ isOpen: false, candidatoId: null });
   const [modalDeletar, setModalDeletar] = useState({ isOpen: false, candidatoId: null });
   const [processando, setProcessando] = useState(false);
@@ -191,21 +161,46 @@ export default function BancoTalentos() {
   const fetchTalentos = async () => {
     setCarregando(true);
     try {
-      let query = supabase
+      // 1. Buscar candidatos ativos no banco de talentos
+      let queryCandidatos = supabase
         .from('candidatos')
         .select('*')
         .eq('banco_talentos', true)
         .order('criado_em', { ascending: false });
 
       if (filtroSetor !== 'todos') {
-        query = query.eq('setor_interesse', filtroSetor);
+        queryCandidatos = queryCandidatos.eq('setor_interesse', filtroSetor);
       }
 
-      const { data, error } = await query;
+      const { data: candidatosAtivos, error: erroCandidatos } = await queryCandidatos;
+      if (erroCandidatos) throw erroCandidatos;
 
-      if (error) throw error;
+      // 2. Buscar candidatos do histórico marcados como banco_talentos
+      let queryHistorico = supabase
+        .from('historico_candidatos')
+        .select('*')
+        .eq('status_final', 'banco_talentos')
+        .order('data_inscricao', { ascending: false });
+
+      if (filtroSetor !== 'todos') {
+        queryHistorico = queryHistorico.eq('setor_interesse', filtroSetor);
+      }
+
+      const { data: historicoTalentos, error: erroHistorico } = await queryHistorico;
+      if (erroHistorico) throw erroHistorico;
+
+      // 3. Marcar origem dos dados
+      const candidatosComOrigem = (candidatosAtivos || []).map(c => ({ ...c, origem: 'ativo' }));
+      const historicoComOrigem = (historicoTalentos || []).map(h => ({ 
+        ...h, 
+        origem: 'historico',
+        Email: h.email,
+        criado_em: h.data_inscricao
+      }));
+
+      setTalentos(candidatosComOrigem);
+      setTalentosHistorico(historicoComOrigem);
       
-      setTalentos(data || []);
     } catch (err) {
       handleError(err, 'Erro ao buscar talentos');
     } finally {
@@ -213,52 +208,49 @@ export default function BancoTalentos() {
     }
   };
 
-  const removerDoTalentos = async (id) => {
+  const removerDoTalentos = async (id, origem) => {
     setProcessando(true);
     try {
-      const { error } = await supabase
-        .from('candidatos')
-        .update({ 
-          banco_talentos: false, 
-          setor_interesse: null,
-          observacoes_talentos: null 
-        })
-        .eq('id', id);
+      if (origem === 'ativo') {
+        await supabase
+          .from('candidatos')
+          .update({ banco_talentos: false, setor_interesse: null, observacoes_talentos: null })
+          .eq('id', id);
+      } else {
+        // Atualizar histórico
+        await supabase
+          .from('historico_candidatos')
+          .update({ status_final: 'reprovado' })
+          .eq('id', id);
+      }
 
-      if (error) throw error;
-
-      showSuccess('✅ Removido do banco de talentos!');
-      setModalRemover({ isOpen: false, candidatoId: null });
-      fetchTalentos();
+      showSuccess('✅ Candidato removido do Banco de Talentos!');
+      await fetchTalentos();
     } catch (err) {
-      handleError(err, 'Erro ao remover do banco');
+      handleError(err, 'Erro ao remover candidato');
     } finally {
       setProcessando(false);
+      setModalRemover({ isOpen: false, candidatoId: null });
     }
   };
 
-  const deletarCandidato = async (id) => {
+  const deletarCandidato = async (id, origem) => {
     setProcessando(true);
     try {
-      const { error } = await supabase
-        .from('candidatos')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
+      if (origem === 'ativo') {
+        await supabase.from('candidatos').delete().eq('id', id);
+      } else {
+        await supabase.from('historico_candidatos').delete().eq('id', id);
+      }
 
       showSuccess('🗑️ Candidato deletado permanentemente!');
-      setModalDeletar({ isOpen: false, candidatoId: null });
-      fetchTalentos();
+      await fetchTalentos();
     } catch (err) {
       handleError(err, 'Erro ao deletar candidato');
     } finally {
       setProcessando(false);
+      setModalDeletar({ isOpen: false, candidatoId: null });
     }
-  };
-
-  const toggleExpand = (id) => {
-    setTalentoExpandido(talentoExpandido === id ? null : id);
   };
 
   const downloadCurriculo = (url) => {
@@ -269,29 +261,36 @@ export default function BancoTalentos() {
     window.open(url, '_blank');
   };
 
-  const talentosFiltrados = talentos.filter(talento => {
+  // Combinar e filtrar talentos
+  const todosTalentos = [...talentos, ...talentosHistorico];
+  
+  const talentosFiltrados = todosTalentos.filter(talento => {
     if (!busca) return true;
     const termo = busca.toLowerCase();
     return (
       talento.nome_completo.toLowerCase().includes(termo) ||
-      talento.Email.toLowerCase().includes(termo) ||
-      talento.cargo_pretendido.toLowerCase().includes(termo)
+      talento.Email?.toLowerCase().includes(termo) ||
+      talento.cargo_pretendido?.toLowerCase().includes(termo) ||
+      talento.setor_interesse?.toLowerCase().includes(termo)
     );
   });
 
+  const setores = ['todos', ...new Set(todosTalentos.map(t => t.setor_interesse).filter(Boolean))];
+
   if (carregando) {
     return (
-      <div style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>
-        <div style={{
-          width: '40px',
-          height: '40px',
-          border: '4px solid #334155',
-          borderTop: '4px solid #f59e0b',
-          borderRadius: '50%',
-          animation: 'spin 1s linear infinite',
-          margin: '0 auto 15px'
-        }} />
-        <p>Carregando banco de talentos...</p>
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '3rem',
+        gap: '1rem'
+      }}>
+        <div className="spinner"></div>
+        <p style={{ color: 'var(--text-tertiary)', fontSize: '14px' }}>
+          Carregando banco de talentos...
+        </p>
       </div>
     );
   }
@@ -299,143 +298,142 @@ export default function BancoTalentos() {
   return (
     <div style={{ padding: '20px' }}>
       {/* Header */}
-      <div style={{ 
-        background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
+      <div style={{
+        background: 'var(--gradient-secondary)',
         padding: '25px',
         borderRadius: '12px',
         marginBottom: '25px',
-        border: '1px solid #334155'
+        border: '1px solid var(--border-color)'
       }}>
-        <h2 style={{ 
-          color: '#f8fafc', 
-          marginBottom: '10px', 
-          display: 'flex', 
-          alignItems: 'center', 
+        <h2 style={{
+          color: 'var(--text-primary)',
+          marginBottom: '10px',
+          display: 'flex',
+          alignItems: 'center',
           gap: '10px',
           fontSize: '24px'
         }}>
           ⭐ Banco de Talentos
         </h2>
-        <p style={{ color: '#94a3b8', fontSize: '14px' }}>
-          Candidatos marcados para oportunidades futuras
+        <p style={{ color: 'var(--text-tertiary)', fontSize: '14px', margin: 0 }}>
+          {todosTalentos.length} talento{todosTalentos.length !== 1 ? 's' : ''} cadastrado{todosTalentos.length !== 1 ? 's' : ''}
+          {talentosHistorico.length > 0 && ` • ${talentosHistorico.length} do histórico`}
         </p>
       </div>
 
-      {/* Filtros e Busca */}
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center',
-        marginBottom: '20px',
-        flexWrap: 'wrap',
-        gap: '15px'
+      {/* Filtros */}
+      <div style={{
+        display: 'flex',
+        gap: '15px',
+        marginBottom: '25px',
+        flexWrap: 'wrap'
       }}>
-        <div style={{ color: '#cbd5e1', fontSize: '15px' }}>
-          <strong style={{ color: '#f59e0b' }}>{talentosFiltrados.length}</strong> talento{talentosFiltrados.length !== 1 ? 's' : ''} encontrado{talentosFiltrados.length !== 1 ? 's' : ''}
-        </div>
+        <input
+          type="text"
+          placeholder="🔍 Buscar por nome, cargo, email..."
+          value={busca}
+          onChange={(e) => setBusca(e.target.value)}
+          style={{
+            flex: 1,
+            minWidth: '300px',
+            padding: '12px 15px',
+            background: 'var(--bg-tertiary)',
+            color: 'var(--text-primary)',
+            border: '1px solid var(--border-color)',
+            borderRadius: '8px',
+            fontSize: '14px'
+          }}
+        />
 
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-          <input
-            type="text"
-            placeholder="🔍 Buscar por nome, email ou cargo..."
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-            style={{
-              background: '#334155',
-              color: '#f8fafc',
-              border: '1px solid #475569',
-              padding: '10px 15px',
-              borderRadius: '6px',
-              minWidth: '250px',
-              fontSize: '14px'
-            }}
-          />
-
-          <select
-            value={filtroSetor}
-            onChange={(e) => setFiltroSetor(e.target.value)}
-            style={{
-              background: '#334155',
-              color: '#f8fafc',
-              border: '1px solid #475569',
-              padding: '10px 15px',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '14px'
-            }}
-          >
-            <option value="todos">📁 Todos os setores</option>
-            <option value="TI">💻 TI</option>
-            <option value="RH">👥 RH</option>
-            <option value="Financeiro">💰 Financeiro</option>
-            <option value="Comercial">📊 Comercial</option>
-            <option value="Operações">⚙️ Operações</option>
-            <option value="Marketing">📢 Marketing</option>
-            <option value="Administrativo">📋 Administrativo</option>
-          </select>
-        </div>
+        <select
+          value={filtroSetor}
+          onChange={(e) => setFiltroSetor(e.target.value)}
+          style={{
+            padding: '12px 15px',
+            background: 'var(--bg-tertiary)',
+            color: 'var(--text-primary)',
+            border: '1px solid var(--border-color)',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontSize: '14px',
+            minWidth: '200px'
+          }}
+        >
+          <option value="todos">📁 Todos os Setores</option>
+          {setores.filter(s => s !== 'todos').map(setor => (
+            <option key={setor} value={setor}>{setor}</option>
+          ))}
+        </select>
       </div>
 
       {/* Lista de Talentos */}
       {talentosFiltrados.length === 0 ? (
-        <div style={{ 
-          textAlign: 'center', 
+        <div style={{
+          textAlign: 'center',
           padding: '60px 20px',
-          background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
+          background: 'var(--gradient-secondary)',
           borderRadius: '12px',
-          border: '1px solid #334155'
+          border: '1px solid var(--border-color)'
         }}>
-          <div style={{ fontSize: '48px', marginBottom: '15px' }}>
-            {busca ? '🔍' : '📭'}
-          </div>
-          <h3 style={{ color: '#f8fafc', marginBottom: '10px' }}>
-            {busca ? 'Nenhum talento encontrado' : 'Nenhum talento no banco'}
+          <div style={{ fontSize: '64px', marginBottom: '20px' }}>⭐</div>
+          <h3 style={{ color: 'var(--text-primary)', marginBottom: '10px' }}>
+            Nenhum talento encontrado
           </h3>
-          <p style={{ color: '#94a3b8' }}>
-            {busca 
-              ? 'Tente buscar com outros termos'
-              : 'Adicione candidatos promissores clicando na estrela ⭐'
-            }
+          <p style={{ color: 'var(--text-tertiary)', fontSize: '14px' }}>
+            {busca ? 'Tente ajustar os filtros de busca' : 'Adicione candidatos ao Banco de Talentos durante o processo seletivo'}
           </p>
         </div>
       ) : (
         <div style={{ display: 'grid', gap: '15px' }}>
           {talentosFiltrados.map((talento) => (
             <div
-              key={talento.id}
+              key={`${talento.origem}-${talento.id}`}
+              onClick={() => setTalentoExpandido(talentoExpandido === talento.id ? null : talento.id)}
               style={{
-                background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
+                background: 'var(--gradient-secondary)',
                 padding: '20px',
                 borderRadius: '12px',
-                border: '1px solid #475569',
-                transition: 'all 0.3s ease',
-                cursor: 'pointer'
+                border: '1px solid var(--border-color)',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
               }}
-              onClick={() => toggleExpand(talento.id)}
               onMouseEnter={(e) => {
-                e.currentTarget.style.border = '1px solid #f59e0b';
-                e.currentTarget.style.boxShadow = '0 4px 20px rgba(245, 158, 11, 0.2)';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = 'var(--shadow-md)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.border = '1px solid #475569';
+                e.currentTarget.style.transform = 'translateY(0)';
                 e.currentTarget.style.boxShadow = 'none';
               }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: '15px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: '20px' }}>
                 <div style={{ flex: 1 }}>
-                  <h3 style={{ 
-                    color: '#f8fafc', 
-                    marginBottom: '8px', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '8px',
+                  <h3 style={{
+                    color: 'var(--text-primary)',
+                    marginBottom: '8px',
                     fontSize: '18px',
-                    fontWeight: '600'
+                    fontWeight: '600',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
                   }}>
-                    ⭐ {talento.nome_completo}
+                    {talento.nome_completo}
+                    {talento.origem === 'historico' && (
+                      <span style={{
+                        background: 'rgba(245, 158, 11, 0.2)',
+                        color: '#fbbf24',
+                        padding: '3px 8px',
+                        borderRadius: '6px',
+                        fontSize: '11px',
+                        fontWeight: '700'
+                      }}>
+                        📜 Histórico
+                      </span>
+                    )}
                   </h3>
+
                   <p style={{ 
-                    color: '#94a3b8', 
+                    color: 'var(--text-tertiary)', 
                     fontSize: '14px', 
                     marginBottom: '10px',
                     display: 'flex',
@@ -444,9 +442,10 @@ export default function BancoTalentos() {
                   }}>
                     📧 {talento.Email}
                   </p>
+
                   {talento.telefone && (
                     <p style={{ 
-                      color: '#94a3b8', 
+                      color: 'var(--text-tertiary)', 
                       fontSize: '14px', 
                       marginBottom: '10px',
                       display: 'flex',
@@ -456,6 +455,7 @@ export default function BancoTalentos() {
                       📱 {talento.telefone}
                     </p>
                   )}
+
                   <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                     <span style={{
                       background: '#f59e0b',
@@ -508,18 +508,15 @@ export default function BancoTalentos() {
                         cursor: 'pointer',
                         fontSize: '14px',
                         fontWeight: '600',
-                        transition: 'all 0.2s ease',
                         whiteSpace: 'nowrap'
                       }}
-                      onMouseEnter={(e) => e.target.style.background = '#2563eb'}
-                      onMouseLeave={(e) => e.target.style.background = '#3b82f6'}
                     >
                       📄 Currículo
                     </button>
                   )}
 
                   <button
-                    onClick={() => setModalRemover({ isOpen: true, candidatoId: talento.id })}
+                    onClick={() => setModalRemover({ isOpen: true, candidatoId: talento.id, origem: talento.origem })}
                     style={{
                       background: '#f59e0b',
                       color: '#fff',
@@ -529,17 +526,14 @@ export default function BancoTalentos() {
                       cursor: 'pointer',
                       fontSize: '14px',
                       fontWeight: '600',
-                      transition: 'all 0.2s ease',
                       whiteSpace: 'nowrap'
                     }}
-                    onMouseEnter={(e) => e.target.style.background = '#d97706'}
-                    onMouseLeave={(e) => e.target.style.background = '#f59e0b'}
                   >
                     ❌ Remover
                   </button>
 
                   <button
-                    onClick={() => setModalDeletar({ isOpen: true, candidatoId: talento.id })}
+                    onClick={() => setModalDeletar({ isOpen: true, candidatoId: talento.id, origem: talento.origem })}
                     style={{
                       background: '#ef4444',
                       color: '#fff',
@@ -549,11 +543,8 @@ export default function BancoTalentos() {
                       cursor: 'pointer',
                       fontSize: '14px',
                       fontWeight: '600',
-                      transition: 'all 0.2s ease',
                       whiteSpace: 'nowrap'
                     }}
-                    onMouseEnter={(e) => e.target.style.background = '#dc2626'}
-                    onMouseLeave={(e) => e.target.style.background = '#ef4444'}
                   >
                     🗑️ Deletar
                   </button>
@@ -565,8 +556,8 @@ export default function BancoTalentos() {
                 <div style={{ 
                   marginTop: '20px', 
                   paddingTop: '20px', 
-                  borderTop: '1px solid #475569',
-                  color: '#cbd5e1'
+                  borderTop: '1px solid var(--border-color)',
+                  color: 'var(--text-secondary)'
                 }}>
                   {talento.mensagem && (
                     <div style={{ 
@@ -579,13 +570,13 @@ export default function BancoTalentos() {
                       <strong style={{ display: 'block', marginBottom: '8px', color: '#3b82f6' }}>
                         💬 Mensagem do Candidato:
                       </strong>
-                      <p style={{ color: '#cbd5e1', fontSize: '14px', lineHeight: '1.6' }}>
+                      <p style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: '1.6' }}>
                         {talento.mensagem}
                       </p>
                     </div>
                   )}
                   
-                  {talento.observacoes_talentos && (
+                  {(talento.observacoes_talentos || talento.observacoes) && (
                     <div style={{ 
                       padding: '15px',
                       background: 'rgba(245, 158, 11, 0.1)',
@@ -595,8 +586,8 @@ export default function BancoTalentos() {
                       <strong style={{ display: 'block', marginBottom: '8px', color: '#f59e0b' }}>
                         📝 Observações do Banco:
                       </strong>
-                      <p style={{ color: '#cbd5e1', fontSize: '14px', lineHeight: '1.6' }}>
-                        {talento.observacoes_talentos}
+                      <p style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: '1.6' }}>
+                        {talento.observacoes_talentos || talento.observacoes}
                       </p>
                     </div>
                   )}
@@ -622,7 +613,7 @@ export default function BancoTalentos() {
                     </div>
                   )}
 
-                  <div style={{ marginTop: '15px', fontSize: '12px', color: '#64748b' }}>
+                  <div style={{ marginTop: '15px', fontSize: '12px', color: 'var(--text-quaternary)' }}>
                     Adicionado em: {new Date(talento.criado_em).toLocaleDateString('pt-BR', {
                       day: '2-digit',
                       month: 'long',
@@ -636,22 +627,21 @@ export default function BancoTalentos() {
         </div>
       )}
 
-      {/* Modal Remover */}
+      {/* Modais */}
       <ModalConfirmacao
         isOpen={modalRemover.isOpen}
-        onClose={() => setModalRemover({ isOpen: false, candidatoId: null })}
-        onConfirm={() => removerDoTalentos(modalRemover.candidatoId)}
+        onClose={() => setModalRemover({ isOpen: false, candidatoId: null, origem: null })}
+        onConfirm={() => removerDoTalentos(modalRemover.candidatoId, modalRemover.origem)}
         titulo="Remover do Banco de Talentos?"
         mensagem="Este candidato será removido do banco de talentos, mas continuará no sistema."
         tipo="remover"
         carregando={processando}
       />
 
-      {/* Modal Deletar */}
       <ModalConfirmacao
         isOpen={modalDeletar.isOpen}
-        onClose={() => setModalDeletar({ isOpen: false, candidatoId: null })}
-        onConfirm={() => deletarCandidato(modalDeletar.candidatoId)}
+        onClose={() => setModalDeletar({ isOpen: false, candidatoId: null, origem: null })}
+        onConfirm={() => deletarCandidato(modalDeletar.candidatoId, modalDeletar.origem)}
         titulo="Deletar Candidato Permanentemente?"
         mensagem="⚠️ ATENÇÃO: Esta ação é irreversível! O candidato será completamente removido do sistema."
         tipo="deletar"

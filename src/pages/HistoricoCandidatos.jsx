@@ -30,7 +30,6 @@ export default function HistoricoCandidatos() {
       if (error) throw error;
 
       setHistorico(data || []);
-      console.log('✅ Histórico carregado:', data?.length || 0, 'registros');
     } catch (err) {
       handleError(err, 'Erro ao buscar histórico');
     } finally {
@@ -79,18 +78,9 @@ export default function HistoricoCandidatos() {
 
   if (carregando) {
     return (
-      <div style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>
-        <div style={{
-          width: '40px',
-          height: '40px',
-          border: '4px solid #334155',
-          borderTop: '4px solid #3b82f6',
-          borderRadius: '50%',
-          animation: 'spin 1s linear infinite',
-          margin: '0 auto 15px'
-        }} />
+      <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-tertiary)' }}>
+        <div className="spinner" style={{ margin: '0 auto 15px' }} />
         <p>Carregando histórico...</p>
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
   }
@@ -99,14 +89,14 @@ export default function HistoricoCandidatos() {
     <div style={{ padding: '20px' }}>
       {/* Header */}
       <div style={{
-        background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
+        background: 'var(--gradient-secondary)',
         padding: '25px',
         borderRadius: '12px',
         marginBottom: '25px',
-        border: '1px solid #334155'
+        border: '1px solid var(--border-color)'
       }}>
         <h2 style={{
-          color: '#f8fafc',
+          color: 'var(--text-primary)',
           marginBottom: '10px',
           display: 'flex',
           alignItems: 'center',
@@ -115,7 +105,7 @@ export default function HistoricoCandidatos() {
         }}>
           📜 Histórico de Candidatos
         </h2>
-        <p style={{ color: '#94a3b8', fontSize: '14px', margin: 0 }}>
+        <p style={{ color: 'var(--text-tertiary)', fontSize: '14px', margin: 0 }}>
           {historico.length} registro{historico.length !== 1 ? 's' : ''} no histórico
         </p>
       </div>
@@ -135,9 +125,9 @@ export default function HistoricoCandidatos() {
           value={busca}
           onChange={(e) => setBusca(e.target.value)}
           style={{
-            background: '#334155',
-            color: '#f8fafc',
-            border: '1px solid #475569',
+            background: 'var(--input-bg)',
+            color: 'var(--text-primary)',
+            border: '1px solid var(--input-border)',
             padding: '12px 15px',
             borderRadius: '8px',
             minWidth: '300px',
@@ -150,9 +140,9 @@ export default function HistoricoCandidatos() {
           value={filtroStatus}
           onChange={(e) => setFiltroStatus(e.target.value)}
           style={{
-            background: '#334155',
-            color: '#f8fafc',
-            border: '1px solid #475569',
+            background: 'var(--input-bg)',
+            color: 'var(--text-primary)',
+            border: '1px solid var(--input-border)',
             padding: '12px 15px',
             borderRadius: '8px',
             cursor: 'pointer',
@@ -173,12 +163,12 @@ export default function HistoricoCandidatos() {
         <div style={{
           textAlign: 'center',
           padding: '60px 20px',
-          background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
+          background: 'var(--gradient-secondary)',
           borderRadius: '12px',
-          border: '1px solid #334155'
+          border: '1px solid var(--border-color)'
         }}>
-          <div style={{ fontSize: '48px', marginBottom: '15px' }}>📭</div>
-          <h3 style={{ color: '#f8fafc', marginBottom: '10px' }}>
+          <div style={{ fontSize: '48px', marginBottom: '15px' }}>🔭</div>
+          <h3 style={{ color: 'var(--text-primary)', marginBottom: '10px' }}>
             Nenhum registro encontrado
           </h3>
         </div>
@@ -188,16 +178,25 @@ export default function HistoricoCandidatos() {
             <div
               key={item.id}
               style={{
-                background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
+                background: 'var(--gradient-secondary)',
                 padding: '20px',
                 borderRadius: '12px',
-                border: '1px solid #475569'
+                border: '1px solid var(--border-color)',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = 'var(--shadow-md)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = 'none';
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: '15px' }}>
                 <div style={{ flex: 1 }}>
                   <h3 style={{
-                    color: '#f8fafc',
+                    color: 'var(--text-primary)',
                     marginBottom: '8px',
                     fontSize: '18px',
                     fontWeight: '600'
@@ -207,11 +206,11 @@ export default function HistoricoCandidatos() {
                   
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '12px' }}>
                     {item.telefone && (
-                      <p style={{ color: '#94a3b8', fontSize: '13px', margin: 0 }}>
+                      <p style={{ color: 'var(--text-tertiary)', fontSize: '13px', margin: 0 }}>
                         📱 {item.telefone}
                       </p>
                     )}
-                    <p style={{ color: '#94a3b8', fontSize: '13px', margin: 0 }}>
+                    <p style={{ color: 'var(--text-tertiary)', fontSize: '13px', margin: 0 }}>
                       💼 {item.cargo_pretendido}
                     </p>
                   </div>
@@ -234,13 +233,13 @@ export default function HistoricoCandidatos() {
                 </div>
 
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: '11px', color: '#64748b' }}>
+                  <div style={{ fontSize: '11px', color: 'var(--text-quaternary)' }}>
                     📅 {new Date(item.data_inscricao).toLocaleDateString('pt-BR')}
                   </div>
                 </div>
               </div>
 
-              {item.motivo_reprovacao && (
+              {item.observacoes && (
                 <div style={{
                   marginTop: '15px',
                   padding: '12px',
@@ -249,7 +248,7 @@ export default function HistoricoCandidatos() {
                   fontSize: '13px',
                   color: '#fca5a5'
                 }}>
-                  <strong>❌ Motivo:</strong> {item.motivo_reprovacao}
+                  <strong>📝 Observações:</strong> {item.observacoes}
                 </div>
               )}
             </div>
