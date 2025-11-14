@@ -6,6 +6,7 @@ export default function Login({ onLogin }) {
   const [senha, setSenha] = useState('');
   const [erro, setErro] = useState('');
   const [carregando, setCarregando] = useState(false);
+  const [mostrarSenha, setMostrarSenha] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -14,7 +15,7 @@ export default function Login({ onLogin }) {
       email,
       password: senha
     });
-    
+
     if (error) {
       setErro('Credenciais inválidas');
       setCarregando(false);
@@ -26,107 +27,54 @@ export default function Login({ onLogin }) {
   return (
     <div style={{
       minHeight: '100vh',
+      background: 'linear-gradient(135deg,#aabbff 0%, #fbbf24 100%)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: '1rem',
-      position: 'relative',
-      overflow: 'hidden'
+      padding: '1rem'
     }}>
-      {/* Efeitos de Fundo Animados */}
       <div style={{
-        position: 'absolute',
-        inset: 0,
-        overflow: 'hidden',
-        zIndex: 0
-      }}>
-        <div style={{
-          position: 'absolute',
-          top: '25%',
-          left: '25%',
-          width: '400px',
-          height: '400px',
-          background: 'radial-gradient(circle, rgba(245, 158, 11, 0.15) 0%, transparent 70%)',
-          borderRadius: '50%',
-          filter: 'blur(60px)',
-          animation: 'pulse 4s ease-in-out infinite'
-        }}></div>
-        <div style={{
-          position: 'absolute',
-          bottom: '25%',
-          right: '25%',
-          width: '400px',
-          height: '400px',
-          background: 'radial-gradient(circle, rgba(217, 119, 6, 0.15) 0%, transparent 70%)',
-          borderRadius: '50%',
-          filter: 'blur(60px)',
-          animation: 'pulse 4s ease-in-out infinite',
-          animationDelay: '2s'
-        }}></div>
-      </div>
-
-      {/* Card de Login */}
-      <div style={{
+        maxWidth: 420,
         width: '100%',
-        maxWidth: '450px',
-        position: 'relative',
-        zIndex: 10,
-        background: 'rgba(30, 41, 59, 0.8)',
-        backdropFilter: 'blur(10px)',
-        border: '1px solid rgba(251, 191, 36, 0.2)',
-        borderRadius: '12px',
-        padding: '2rem',
-        boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)',
-        animation: 'fadeIn 0.6s ease-out'
+        background: 'rgba(30,41,59,0.92)',
+        border: '1.5px solid rgba(251,191,36,0.20)',
+        borderRadius: '18px',
+        padding: '2.5rem 2rem',
+        backdropFilter: 'blur(12px)',
+        boxShadow: '0 4px 44px -12px rgb(30 41 59 / 65%)',
+        position: 'relative'
       }}>
-        {/* Logo e Título */}
-        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          {/* Logo */}
-          <div style={{
-            width: '80px',
-            height: '80px',
-            margin: '0 auto 1.5rem',
-            background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-            borderRadius: '20px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 10px 30px rgba(245, 158, 11, 0.3)'
-          }}>
-            <svg
-              width="40"
-              height="40"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="white"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-            </svg>
-          </div>
-
-          {/* Título */}
-          <h1 style={{
-            fontSize: '2rem',
-            fontWeight: 700,
-            marginBottom: '0.5rem',
-            background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text'
-          }}>
-            Painel RH
-          </h1>
-          <p style={{
-            color: '#94a3b8',
-            fontSize: '0.875rem'
-          }}>
-            Michelc Assessoria Contábil
-          </p>
+        {/* Local para logo */}
+        <div style={{display:'flex',justifyContent:'center'}}>
+          <img
+            src="/logo.png"
+            alt="Logo Michelc"
+            style={{
+              width: 80,
+              height: 80,
+              objectFit: 'contain',
+              borderRadius: 16,
+              background: 'rgba(255,255,255,0.35)',
+              boxShadow: '0 4px 18px #fbbf2450',
+              marginBottom: '1.6rem'
+            }}
+          />
         </div>
+
+        {/* Título */}
+        <h1 style={{
+          textAlign: 'center',
+          fontWeight: 700,
+          fontSize: '2rem',
+          marginBottom: 8,
+          color: '#e4b02fff'
+        }}>
+          Gestão Inteligente
+        </h1>
+
+        <p style={{ textAlign:'center', color: '#94a3b8', fontSize: '0.875rem', marginBottom: '2rem' }}>
+          Michelc Assessoria Contábil
+        </p>
 
         {/* Formulário */}
         <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -172,7 +120,7 @@ export default function Login({ onLogin }) {
                 placeholder="seu@email.com"
                 style={{
                   width: '100%',
-                  padding: '0.75rem 1rem 0.75rem 3rem',
+                  padding: '0.75rem 1.25rem 0.75rem 3rem',
                   background: '#334155',
                   border: '1px solid #334155',
                   borderRadius: '8px',
@@ -193,7 +141,7 @@ export default function Login({ onLogin }) {
             </div>
           </div>
 
-          {/* Campo Senha */}
+          {/* Campo Senha com mostrar/ocultar */}
           <div>
             <label style={{
               display: 'block',
@@ -227,7 +175,7 @@ export default function Login({ onLogin }) {
                 </svg>
               </span>
               <input
-                type="password"
+                type={mostrarSenha ? "text" : "password"}
                 value={senha}
                 onChange={(e) => setSenha(e.target.value)}
                 required
@@ -235,7 +183,7 @@ export default function Login({ onLogin }) {
                 placeholder="••••••••"
                 style={{
                   width: '100%',
-                  padding: '0.75rem 1rem 0.75rem 3rem',
+                  padding: '0.75rem 2.5rem 0.75rem 3rem', // padding-right maior
                   background: '#334155',
                   border: '1px solid #334155',
                   borderRadius: '8px',
@@ -253,6 +201,62 @@ export default function Login({ onLogin }) {
                   e.target.style.boxShadow = 'none';
                 }}
               />
+
+              {/* Botão de mostrar/ocultar senha */}
+              <button
+                type="button"
+                aria-label={mostrarSenha ? "Ocultar senha" : "Mostrar senha"}
+                onClick={() => setMostrarSenha(!mostrarSenha)}
+                style={{
+                  position: 'absolute',
+                  right: '0.75rem', // mais próximo da borda, mas com padding suficiente
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  color: '#94a3b8',
+                  cursor: 'pointer',
+                  padding: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  height: '24px',
+                  width: '24px',
+                  justifyContent: 'center'
+                }}
+                tabIndex={-1}
+              >
+                {mostrarSenha ? (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M17.94 17.94A10.06 10.06 0 0 1 12 19c-5.523 0-10-4.477-10-10a9.96 9.96 0 0 1 2.065-6.23M1 1l22 22"></path>
+                    <path d="M9.88 9.88a3 3 0 0 0 4.24 4.24"></path>
+                  </svg>
+                ) : (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                )}
+              </button>
             </div>
           </div>
 
