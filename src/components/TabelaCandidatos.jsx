@@ -231,7 +231,7 @@ export default function TabelaCandidatos({ filtros, setPaginaAtual }) {
                     }}
                     style={{
                       background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                      color: 'white',
+                      color: '#9c9999ff',
                       padding: '4px 8px',
                       borderRadius: '12px',
                       fontSize: '10px',
@@ -422,7 +422,7 @@ export default function TabelaCandidatos({ filtros, setPaginaAtual }) {
                         style={{
                           padding: '8px 16px',
                           background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                          color: 'white',
+                          color: '#979292ff',
                           border: 'none',
                           borderRadius: '8px',
                           cursor: 'pointer',

@@ -121,7 +121,7 @@ export default function GestaoVagas() {
           style={{
             padding: '12px 24px',
             background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-            color: 'white',
+            color: '#9e9797ff',
             border: 'none',
             borderRadius: '8px',
             cursor: 'pointer',

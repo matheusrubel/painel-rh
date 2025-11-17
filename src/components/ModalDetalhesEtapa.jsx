@@ -189,7 +189,7 @@ export default function ModalDetalhesEtapa({ candidato, isOpen, onClose, onAtual
                   alignItems: 'center',
                   gap: '8px',
                   background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                  color: 'white',
+                  color: '#9c9898ff',
                   padding: '8px 16px',
                   borderRadius: '8px',
                   fontSize: '13px',
@@ -225,7 +225,7 @@ export default function ModalDetalhesEtapa({ candidato, isOpen, onClose, onAtual
               }}
               style={{
                 background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
-                color: '#fff',
+                color: '#9e9797ff',
                 border: 'none',
                 padding: '8px 16px',
                 borderRadius: '6px',
