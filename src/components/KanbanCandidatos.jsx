@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../config/supabase';
 import ModalDetalhesEtapa from './ModalDetalhesEtapa';
+import ModalRespostaProposta from './ModalRespostaProposta';
 import { showSuccess, showError } from '../utils/toast';
 import { handleError } from '../utils/errorHandler';
-import { useTheme } from '../contexts/ThemeContext'; // ✅ NOVO
+import { useTheme } from '../contexts/ThemeContext';
 import {
   DndContext,
   DragOverlay,
@@ -27,7 +28,7 @@ const ETAPAS = [
 
 // ========== MODAL DE REPROVAÇÃO (DESIGN MODERNO E SUAVE) ==========
 function ModalReprovacao({ isOpen, onClose, onConfirm, candidato }) {
-  const { colors } = useTheme(); // ✅ ADICIONAR ISSO
+  const { colors } = useTheme();
   const [motivoReprovacao, setMotivoReprovacao] = useState('');
   const [adicionarTalentos, setAdicionarTalentos] = useState(false);
   const [setorTalentos, setSetorTalentos] = useState('');
@@ -214,8 +215,8 @@ function ModalReprovacao({ isOpen, onClose, onConfirm, candidato }) {
               style={{
                 width: '100%',
                 padding: '14px',
-                backgroundColor: 'rgba(15, 23, 42, 0.6)',
-                border: '1px solid rgba(71, 85, 105, 0.4)',
+                backgroundColor: colors.bg.primary,
+                border: `1px solid ${colors.border.primary}`,
                 borderRadius: '10px',
                 color: colors.text.primary,
                 fontSize: '14px',
@@ -229,7 +230,7 @@ function ModalReprovacao({ isOpen, onClose, onConfirm, candidato }) {
                 e.target.style.boxShadow = '0 0 0 3px rgba(239, 68, 68, 0.1)';
               }}
               onBlur={(e) => {
-                e.target.style.borderColor = 'rgba(71, 85, 105, 0.4)';
+                e.target.style.borderColor = colors.border.primary;
                 e.target.style.boxShadow = 'none';
               }}
             />
@@ -298,8 +299,8 @@ function ModalReprovacao({ isOpen, onClose, onConfirm, candidato }) {
                 style={{
                   width: '100%',
                   padding: '12px 14px',
-                  backgroundColor: 'rgba(15, 23, 42, 0.6)',
-                  border: '1px solid rgba(71, 85, 105, 0.4)',
+                  backgroundColor: colors.bg.primary,
+                  border: `1px solid ${colors.border.primary}`,
                   borderRadius: '10px',
                   color: colors.text.primary,
                   fontSize: '14px',
@@ -308,7 +309,7 @@ function ModalReprovacao({ isOpen, onClose, onConfirm, candidato }) {
                   outline: 'none'
                 }}
                 onFocus={(e) => e.target.style.borderColor = '#10b981'}
-                onBlur={(e) => e.target.style.borderColor = 'rgba(71, 85, 105, 0.4)'}
+                onBlur={(e) => e.target.style.borderColor = colors.border.primary}
               >
                 <option value="">Selecione o setor</option>
                 <option value="Contabilidade">📊 Contabilidade</option>
@@ -346,8 +347,8 @@ function ModalReprovacao({ isOpen, onClose, onConfirm, candidato }) {
                 style={{
                   width: '100%',
                   padding: '14px',
-                  backgroundColor: 'rgba(15, 23, 42, 0.6)',
-                  border: '1px solid rgba(71, 85, 105, 0.4)',
+                  backgroundColor: colors.bg.primary,
+                  border: `1px solid ${colors.border.primary}`,
                   borderRadius: '10px',
                   color: colors.text.primary,
                   fontSize: '14px',
@@ -361,7 +362,7 @@ function ModalReprovacao({ isOpen, onClose, onConfirm, candidato }) {
                   e.target.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.1)';
                 }}
                 onBlur={(e) => {
-                  e.target.style.borderColor = 'rgba(71, 85, 105, 0.4)';
+                  e.target.style.borderColor = colors.border.primary;
                   e.target.style.boxShadow = 'none';
                 }}
               />
@@ -407,25 +408,15 @@ function ModalReprovacao({ isOpen, onClose, onConfirm, candidato }) {
               disabled={enviando}
               style={{
                 padding: '12px 28px',
-                background: 'rgba(71, 85, 105, 0.3)',
+                background: colors.bg.hover,
                 color: colors.text.primary,
-                border: '1px solid rgba(71, 85, 105, 0.5)',
+                border: `1px solid ${colors.border.primary}`,
                 borderRadius: '10px',
                 cursor: enviando ? 'not-allowed' : 'pointer',
                 fontWeight: '600',
                 fontSize: '14px',
                 opacity: enviando ? 0.5 : 1,
                 transition: 'all 0.2s ease'
-              }}
-              onMouseEnter={(e) => {
-                if (!enviando) {
-                  e.target.style.background = 'rgba(71, 85, 105, 0.5)';
-                  e.target.style.transform = 'translateY(-1px)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.background = 'rgba(71, 85, 105, 0.3)';
-                e.target.style.transform = 'translateY(0)';
               }}
             >
               Cancelar
@@ -448,30 +439,8 @@ function ModalReprovacao({ isOpen, onClose, onConfirm, candidato }) {
                 transition: 'all 0.2s ease',
                 boxShadow: enviando ? 'none' : '0 4px 12px rgba(239, 68, 68, 0.3)'
               }}
-              onMouseEnter={(e) => {
-                if (!enviando) {
-                  e.target.style.transform = 'translateY(-2px)';
-                  e.target.style.boxShadow = '0 6px 20px rgba(239, 68, 68, 0.4)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.transform = 'translateY(0)';
-                e.target.style.boxShadow = '0 4px 12px rgba(239, 68, 68, 0.3)';
-              }}
             >
-              {enviando ? (
-                <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{
-                    width: '14px',
-                    height: '14px',
-                    border: '2px solid rgba(255,255,255,0.3)',
-                    borderTopColor: '#fff',
-                    borderRadius: '50%',
-                    animation: 'spin 0.8s linear infinite'
-                  }} />
-                  Processando...
-                </span>
-              ) : '❌ Confirmar Reprovação'}
+              {enviando ? '⏳ Processando...' : '❌ Confirmar Reprovação'}
             </button>
           </div>
         </form>
@@ -496,17 +465,14 @@ function ModalReprovacao({ isOpen, onClose, onConfirm, candidato }) {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.8; }
         }
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
       `}</style>
     </div>
   );
 }
 
 // ========== CARD DRAGGABLE (DESIGN MODERNO E SUAVE) ==========
-function CandidatoCard({ candidato, onClick }) {
-  const { colors } = useTheme(); // ✅ Usar cores do tema
+function CandidatoCard({ candidato, onClick, etapaId, onAbrirProposta }) {
+  const { colors } = useTheme();
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: candidato.id
   });
@@ -516,9 +482,9 @@ function CandidatoCard({ candidato, onClick }) {
     opacity: isDragging ? 0 : 1,
     background: isDragging 
       ? 'linear-gradient(135deg, #475569 0%, #334155 100%)'
-      : colors.bg.card, // ✅ Cor do tema
+      : colors.bg.card,
     backdropFilter: 'blur(10px)',
-    border: `1px solid ${colors.border.secondary}`, // ✅ Cor do tema
+    border: `1px solid ${colors.border.secondary}`,
     borderRadius: '10px',
     padding: '14px',
     cursor: isDragging ? 'grabbing' : 'grab',
@@ -527,7 +493,7 @@ function CandidatoCard({ candidato, onClick }) {
     touchAction: 'none',
     boxShadow: isDragging 
       ? 'none'
-      : colors.shadow.sm // ✅ Sombra do tema
+      : colors.shadow.sm
   };
 
   const calcularTempoNaEtapa = (dataInicio) => {
@@ -548,13 +514,13 @@ function CandidatoCard({ candidato, onClick }) {
         {...attributes}
         onMouseEnter={(e) => {
           if (!isDragging) {
-            e.currentTarget.style.borderColor = colors.status.info; // ✅ Cor do tema
+            e.currentTarget.style.borderColor = colors.status.info;
             e.currentTarget.style.transform = 'translateY(-2px)';
           }
         }}
         onMouseLeave={(e) => {
           if (!isDragging) {
-            e.currentTarget.style.borderColor = colors.border.secondary; // ✅ Cor do tema
+            e.currentTarget.style.borderColor = colors.border.secondary;
             e.currentTarget.style.transform = 'translateY(0)';
           }
         }}
@@ -564,7 +530,7 @@ function CandidatoCard({ candidato, onClick }) {
           onClick(candidato);
         }}>
           <div style={{
-            color: colors.text.primary, // ✅ Cor do tema
+            color: colors.text.primary,
             fontWeight: '600',
             fontSize: '14px',
             marginBottom: '6px',
@@ -574,12 +540,11 @@ function CandidatoCard({ candidato, onClick }) {
             gap: '6px'
           }}>
             {candidato.nome_completo}
-            {/* ✅ TAG COMPACTA DE HISTÓRICO */}
             {candidato.historico_anterior && candidato.historico_anterior.length > 0 && (
               <span
                 style={{
                   background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                  color: '#8f8888ff',
+                  color: '#ffffff',
                   padding: '2px 6px',
                   borderRadius: '8px',
                   fontSize: '9px',
@@ -597,7 +562,7 @@ function CandidatoCard({ candidato, onClick }) {
           </div>
 
           <div style={{
-            color: colors.text.tertiary, // ✅ Cor do tema
+            color: colors.text.tertiary,
             fontSize: '12px',
             marginBottom: '10px',
             display: 'flex',
@@ -612,14 +577,14 @@ function CandidatoCard({ candidato, onClick }) {
             justifyContent: 'space-between',
             alignItems: 'center',
             fontSize: '11px',
-            color: colors.text.muted // ✅ Cor do tema
+            color: colors.text.muted
           }}>
             <span style={{ 
               display: 'flex', 
               alignItems: 'center', 
               gap: '4px',
               padding: '3px 8px',
-              background: colors.bg.hover, // ✅ Cor do tema
+              background: colors.bg.hover,
               borderRadius: '6px'
             }}>
               ⏱️ {calcularTempoNaEtapa(candidato.etapaAtual?.data_inicio)}
@@ -634,12 +599,50 @@ function CandidatoCard({ candidato, onClick }) {
                 borderRadius: '6px',
                 fontWeight: 'bold',
                 fontSize: '11px',
-                boxShadow: colors.shadow.sm // ✅ Sombra do tema
+                boxShadow: colors.shadow.sm
               }}>
                 ⭐ {candidato.etapaAtual.score}
               </span>
             )}
           </div>
+
+          {/* ✅ BOTÃO DE PROPOSTA - APENAS PARA APROVADOS */}
+          {etapaId === 'aprovado' && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onAbrirProposta(candidato);
+              }}
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                marginTop: '10px',
+                background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                color: '#9c9a9aff',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontSize: '12px',
+                fontWeight: '600',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                boxShadow: '0 2px 8px rgba(59, 130, 246, 0.3)',
+                transition: 'all 0.2s'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.transform = 'translateY(-2px)';
+                e.target.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.4)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.transform = 'translateY(0)';
+                e.target.style.boxShadow = '0 2px 8px rgba(59, 130, 246, 0.3)';
+              }}
+            >
+              📋 Registrar Resposta
+            </button>
+          )}
         </div>
       </div>
     </>
@@ -647,8 +650,8 @@ function CandidatoCard({ candidato, onClick }) {
 }
 
 // ========== COLUNA DROPPABLE COM ALTURA FIXA E SCROLL ==========
-function ColunaKanban({ etapa, candidatos, onCandidatoClick }) {
-  const { colors } = useTheme(); // ✅ ADICIONAR
+function ColunaKanban({ etapa, candidatos, onCandidatoClick, onAbrirProposta }) {
+  const { colors } = useTheme();
   const { setNodeRef, isOver } = useDroppable({
     id: etapa.id
   });
@@ -671,7 +674,6 @@ function ColunaKanban({ etapa, candidatos, onCandidatoClick }) {
           : '0 4px 12px rgba(0, 0, 0, 0.2)'
       }}
     >
-      {/* Header da Coluna - Fixo no topo */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
@@ -681,7 +683,7 @@ function ColunaKanban({ etapa, candidatos, onCandidatoClick }) {
         background: `linear-gradient(90deg, ${etapa.cor}15 0%, transparent 100%)`,
         borderTopLeftRadius: '12px',
         borderTopRightRadius: '12px',
-        flexShrink: 0 // ✅ Não encolhe
+        flexShrink: 0
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <span style={{ 
@@ -714,26 +716,25 @@ function ColunaKanban({ etapa, candidatos, onCandidatoClick }) {
         </span>
       </div>
 
-      {/* Área dos Cards com Scroll - ✅ AQUI ESTÁ A MUDANÇA PRINCIPAL */}
       <div 
         ref={setNodeRef}
         style={{ 
-          flex: 1, // ✅ Ocupa o espaço restante
-          overflowY: 'auto', // ✅ SCROLL VERTICAL
+          flex: 1,
+          overflowY: 'auto',
           overflowX: 'hidden',
           padding: '14px',
-          // ✅ Customização da scrollbar (opcional, para browsers Webkit)
-          scrollbarWidth: 'thin', // Firefox
-          scrollbarColor: `${etapa.cor} rgba(30, 41, 59, 0.3)`, // Firefox
+          scrollbarWidth: 'thin',
+          scrollbarColor: `${etapa.cor} rgba(30, 41, 59, 0.3)`,
         }}
-        // ✅ CSS para Webkit (Chrome, Safari, Edge)
         className="kanban-scroll"
       >
         {candidatos.map((candidato) => (
           <CandidatoCard
             key={candidato.id}
             candidato={candidato}
+            etapaId={etapa.id}
             onClick={onCandidatoClick}
+            onAbrirProposta={onAbrirProposta}
           />
         ))}
         
@@ -764,16 +765,16 @@ function ColunaKanban({ etapa, candidatos, onCandidatoClick }) {
 
 // ========== COMPONENTE PRINCIPAL ==========
 export default function KanbanCandidatos() {
-  const { colors } = useTheme(); // ✅ Usar cores do tema
+  const { colors } = useTheme();
   const [candidatosPorEtapa, setCandidatosPorEtapa] = useState({});
-  const [candidatosPorEtapaOriginal, setCandidatosPorEtapaOriginal] = useState({}); // ✅ NOVO: guardar dados originais
+  const [candidatosPorEtapaOriginal, setCandidatosPorEtapaOriginal] = useState({});
   const [carregando, setCarregando] = useState(true);
   const [candidatoSelecionado, setCandidatoSelecionado] = useState(null);
   const [modalAberto, setModalAberto] = useState(false);
   const [activeId, setActiveId] = useState(null);
   const [activeCandidato, setActiveCandidato] = useState(null);
+  const [modalProposta, setModalProposta] = useState({ isOpen: false, candidato: null });
   
-  // ✅ NOVO: Estados de filtro
   const [filtros, setFiltros] = useState({
     pesquisa: '',
     vaga: ''
@@ -819,10 +820,8 @@ export default function KanbanCandidatos() {
 
       if (error) throw error;
 
-      // ✅ NOVO: Buscar histórico para cada candidato
       const candidatosComHistorico = await Promise.all(
         candidatos?.map(async (candidato) => {
-          // Buscar no histórico por nome E telefone
           const { data: historicos } = await supabase
             .from('historico_candidatos')
             .select('*')
@@ -842,7 +841,6 @@ export default function KanbanCandidatos() {
       });
 
       candidatosComHistorico?.forEach(candidato => {
-        // ✅ CORRIGIDO: Usar etapa_atual do candidato, não a última do array
         const etapaId = candidato.etapa_atual || 'triagem';
         const etapaAtual = candidato.etapas?.find(e => e.etapa === etapaId) || candidato.etapas?.[candidato.etapas.length - 1];
         
@@ -854,7 +852,7 @@ export default function KanbanCandidatos() {
         }
       });
 
-      setCandidatosPorEtapaOriginal(porEtapa); // ✅ NOVO: Guardar original
+      setCandidatosPorEtapaOriginal(porEtapa);
       setCandidatosPorEtapa(porEtapa);
     } catch (err) {
       handleError(err, 'Erro ao carregar pipeline');
@@ -862,11 +860,9 @@ export default function KanbanCandidatos() {
     setCarregando(false);
   };
 
-  // ✅ NOVO: Função de filtro
   const aplicarFiltros = () => {
     const { pesquisa, vaga } = filtros;
     
-    // Se não há filtros, mostrar todos
     if (!pesquisa && !vaga) {
       setCandidatosPorEtapa(candidatosPorEtapaOriginal);
       return;
@@ -877,18 +873,15 @@ export default function KanbanCandidatos() {
       filtrado[e.id] = [];
     });
 
-    // Filtrar em cada etapa
     Object.keys(candidatosPorEtapaOriginal).forEach(etapaId => {
       const candidatos = candidatosPorEtapaOriginal[etapaId];
       
       const candidatosFiltrados = candidatos.filter(candidato => {
-        // Filtro de pesquisa (nome, email, telefone)
         const matchPesquisa = !pesquisa || 
           candidato.nome_completo?.toLowerCase().includes(pesquisa.toLowerCase()) ||
           candidato.email?.toLowerCase().includes(pesquisa.toLowerCase()) ||
           candidato.telefone?.includes(pesquisa);
         
-        // Filtro de vaga
         const matchVaga = !vaga || 
           candidato.cargo_pretendido?.toLowerCase().includes(vaga.toLowerCase());
         
@@ -901,12 +894,10 @@ export default function KanbanCandidatos() {
     setCandidatosPorEtapa(filtrado);
   };
 
-  // ✅ NOVO: Aplicar filtros quando mudarem
   useEffect(() => {
     aplicarFiltros();
   }, [filtros, candidatosPorEtapaOriginal]);
 
-  // ✅ NOVO: Limpar filtros
   const limparFiltros = () => {
     setFiltros({
       pesquisa: '',
@@ -1003,7 +994,6 @@ export default function KanbanCandidatos() {
     const { motivoReprovacao, adicionarTalentos, setorTalentos, observacoesTalentos } = dados;
 
     try {
-      // ✅ SEMPRE salvar o histórico da etapa de reprovação
       await supabase
         .from('etapas_candidato')
         .insert({
@@ -1014,7 +1004,6 @@ export default function KanbanCandidatos() {
         });
 
       if (adicionarTalentos) {
-        // Se adicionar ao banco de talentos, atualizar o candidato
         await supabase
           .from('candidatos')
           .update({
@@ -1026,7 +1015,6 @@ export default function KanbanCandidatos() {
           })
           .eq('id', candidato.id);
 
-        // ✅ Salvar no histórico como "banco_talentos"
         await supabase
           .from('historico_candidatos')
           .insert({
@@ -1042,7 +1030,6 @@ export default function KanbanCandidatos() {
 
         showSuccess('✅ Candidato reprovado e adicionado ao Banco de Talentos!');
       } else {
-        // ✅ Se NÃO adicionar ao banco, salvar no histórico como "reprovado"
         await supabase
           .from('historico_candidatos')
           .insert({
@@ -1056,7 +1043,6 @@ export default function KanbanCandidatos() {
             observacoes: motivoReprovacao
           });
 
-        // Depois deletar o candidato
         await supabase
           .from('candidatos')
           .delete()
@@ -1107,7 +1093,6 @@ export default function KanbanCandidatos() {
 
   return (
     <div style={{ padding: '20px' }}>
-      {/* ✅ BARRA DE FILTROS */}
       <div style={{
         background: colors.bg.card,
         padding: '20px',
@@ -1144,7 +1129,6 @@ export default function KanbanCandidatos() {
           gap: '12px',
           alignItems: 'end'
         }}>
-          {/* Pesquisa Geral */}
           <div>
             <label style={{
               display: 'block',
@@ -1176,7 +1160,6 @@ export default function KanbanCandidatos() {
             />
           </div>
 
-          {/* Filtro por Vaga */}
           <div>
             <label style={{
               display: 'block',
@@ -1208,7 +1191,6 @@ export default function KanbanCandidatos() {
             />
           </div>
 
-          {/* Botão Limpar */}
           <button
             onClick={limparFiltros}
             disabled={!filtros.pesquisa && !filtros.vaga}
@@ -1231,22 +1213,11 @@ export default function KanbanCandidatos() {
               gap: '6px',
               opacity: filtros.pesquisa || filtros.vaga ? 1 : 0.5
             }}
-            onMouseEnter={(e) => {
-              if (filtros.pesquisa || filtros.vaga) {
-                e.target.style.transform = 'translateY(-2px)';
-                e.target.style.boxShadow = colors.shadow.md;
-              }
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.transform = 'translateY(0)';
-              e.target.style.boxShadow = 'none';
-            }}
           >
             🗑️ Limpar
           </button>
         </div>
 
-        {/* Contador de resultados */}
         {(filtros.pesquisa || filtros.vaga) && (
           <div style={{
             marginTop: '12px',
@@ -1324,6 +1295,9 @@ export default function KanbanCandidatos() {
                 setCandidatoSelecionado(candidato);
                 setModalAberto(true);
               }}
+              onAbrirProposta={(candidato) => {
+                setModalProposta({ isOpen: true, candidato });
+              }}
             />
           ))}
         </div>
@@ -1378,7 +1352,14 @@ export default function KanbanCandidatos() {
         candidato={modalReprovacao.candidato}
       />
 
-      {/* ✅ CSS GLOBAL COM SCROLLBAR CUSTOMIZADA */}
+      {/* ✅ MODAL DE RESPOSTA DA PROPOSTA */}
+      <ModalRespostaProposta
+        candidato={modalProposta.candidato}
+        isOpen={modalProposta.isOpen}
+        onClose={() => setModalProposta({ isOpen: false, candidato: null })}
+        onAtualizar={fetchCandidatos}
+      />
+
       <style>{`
         @keyframes spin {
           to { transform: rotate(360deg); }
@@ -1402,7 +1383,6 @@ export default function KanbanCandidatos() {
           50% { opacity: 0.8; }
         }
 
-        /* ✅ SCROLLBAR CUSTOMIZADA (Webkit: Chrome, Safari, Edge) */
         .kanban-scroll::-webkit-scrollbar {
           width: 8px;
         }

@@ -93,7 +93,7 @@ export default function Dashboard() {
                 : 'rgba(239, 68, 68, 0.1)';
             }}
           >
-            🚪 Sair
+             Sair
           </button>
         </div>
       </header>
@@ -177,7 +177,7 @@ export default function Dashboard() {
                 style={{
                   padding: '12px 24px',
                   background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                  color: '#ffffff',
+                  color: '#918989ff',
                   border: 'none',
                   borderRadius: '10px',
                   cursor: 'pointer',

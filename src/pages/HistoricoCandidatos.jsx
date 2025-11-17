@@ -150,11 +150,9 @@ export default function HistoricoCandidatos() {
           }}
         >
           <option value="todos">📊 Todos os Status</option>
-          <option value="em_processo">⏳ Em Processo</option>
           <option value="aprovado">✅ Aprovado</option>
           <option value="reprovado">❌ Reprovado</option>
           <option value="banco_talentos">⭐ Banco de Talentos</option>
-          <option value="desistiu">🚪 Desistiu</option>
         </select>
       </div>
 
