@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { supabase } from '../config/supabase';
+import { useTheme } from '../contexts/ThemeContext';
 
 export default function Login({ onLogin }) {
+  const { isDark } = useTheme();
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [erro, setErro] = useState('');
@@ -27,7 +29,7 @@ export default function Login({ onLogin }) {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(135deg,#aabbff 0%, #fbbf24 100%)',
+      background: 'linear-gradient(135deg, #aabbff 0%, #fbbf24 100%)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -36,16 +38,20 @@ export default function Login({ onLogin }) {
       <div style={{
         maxWidth: 420,
         width: '100%',
-        background: 'rgba(30,41,59,0.92)',
-        border: '1.5px solid rgba(251,191,36,0.20)',
+        background: isDark 
+          ? 'rgba(30, 41, 59, 0.92)'
+          : 'rgba(255, 255, 255, 0.95)',
+        border: `1.5px solid ${isDark ? 'rgba(251, 191, 36, 0.20)' : 'rgba(251, 191, 36, 0.40)'}`,
         borderRadius: '18px',
         padding: '2.5rem 2rem',
         backdropFilter: 'blur(12px)',
-        boxShadow: '0 4px 44px -12px rgb(30 41 59 / 65%)',
+        boxShadow: isDark 
+          ? '0 4px 44px -12px rgb(30 41 59 / 65%)'
+          : '0 4px 44px -12px rgba(0, 0, 0, 0.25)',
         position: 'relative'
       }}>
-        {/* Local para logo */}
-        <div style={{display:'flex',justifyContent:'center'}}>
+        {/* Logo */}
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
           <img
             src="/logo.png"
             alt="Logo Michelc"
@@ -54,9 +60,12 @@ export default function Login({ onLogin }) {
               height: 80,
               objectFit: 'contain',
               borderRadius: 16,
-              background: 'rgba(255,255,255,0.35)',
+              background: isDark 
+                ? 'rgba(255, 255, 255, 0.35)' 
+                : 'rgba(30, 41, 59, 0.9)',
               boxShadow: '0 4px 18px #fbbf2450',
-              marginBottom: '1.6rem'
+              marginBottom: '1.6rem',
+              padding: '8px'
             }}
           />
         </div>
@@ -72,7 +81,12 @@ export default function Login({ onLogin }) {
           Gestão Inteligente
         </h1>
 
-        <p style={{ textAlign:'center', color: '#94a3b8', fontSize: '0.875rem', marginBottom: '2rem' }}>
+        <p style={{ 
+          textAlign: 'center', 
+          color: isDark ? '#94a3b8' : '#6b7280', 
+          fontSize: '0.875rem', 
+          marginBottom: '2rem' 
+        }}>
           Michelc Assessoria Contábil
         </p>
 
@@ -83,7 +97,7 @@ export default function Login({ onLogin }) {
             <label style={{
               display: 'block',
               marginBottom: '0.5rem',
-              color: '#cbd5e1',
+              color: isDark ? '#cbd5e1' : '#374151',
               fontSize: '0.875rem',
               fontWeight: 600
             }}>
@@ -95,7 +109,7 @@ export default function Login({ onLogin }) {
                 left: '1rem',
                 top: '50%',
                 transform: 'translateY(-50%)',
-                color: '#94a3b8'
+                color: isDark ? '#94a3b8' : '#6b7280'
               }}>
                 <svg
                   width="20"
@@ -121,10 +135,10 @@ export default function Login({ onLogin }) {
                 style={{
                   width: '100%',
                   padding: '0.75rem 1.25rem 0.75rem 3rem',
-                  background: '#334155',
-                  border: '1px solid #334155',
+                  background: isDark ? '#334155' : '#f9fafb',
+                  border: `1px solid ${isDark ? '#334155' : '#d1d5db'}`,
                   borderRadius: '8px',
-                  color: '#f8fafc',
+                  color: isDark ? '#f8fafc' : '#111827',
                   fontSize: '0.875rem',
                   transition: 'all 0.3s',
                   outline: 'none'
@@ -134,19 +148,19 @@ export default function Login({ onLogin }) {
                   e.target.style.boxShadow = '0 0 0 3px rgba(245, 158, 11, 0.1)';
                 }}
                 onBlur={(e) => {
-                  e.target.style.borderColor = '#334155';
+                  e.target.style.borderColor = isDark ? '#334155' : '#d1d5db';
                   e.target.style.boxShadow = 'none';
                 }}
               />
             </div>
           </div>
 
-          {/* Campo Senha com mostrar/ocultar */}
+          {/* Campo Senha */}
           <div>
             <label style={{
               display: 'block',
               marginBottom: '0.5rem',
-              color: '#cbd5e1',
+              color: isDark ? '#cbd5e1' : '#374151',
               fontSize: '0.875rem',
               fontWeight: 600
             }}>
@@ -158,7 +172,7 @@ export default function Login({ onLogin }) {
                 left: '1rem',
                 top: '50%',
                 transform: 'translateY(-50%)',
-                color: '#94a3b8'
+                color: isDark ? '#94a3b8' : '#6b7280'
               }}>
                 <svg
                   width="20"
@@ -183,11 +197,11 @@ export default function Login({ onLogin }) {
                 placeholder="••••••••"
                 style={{
                   width: '100%',
-                  padding: '0.75rem 2.5rem 0.75rem 3rem', // padding-right maior
-                  background: '#334155',
-                  border: '1px solid #334155',
+                  padding: '0.75rem 2.5rem 0.75rem 3rem',
+                  background: isDark ? '#334155' : '#f9fafb',
+                  border: `1px solid ${isDark ? '#334155' : '#d1d5db'}`,
                   borderRadius: '8px',
-                  color: '#f8fafc',
+                  color: isDark ? '#f8fafc' : '#111827',
                   fontSize: '0.875rem',
                   transition: 'all 0.3s',
                   outline: 'none'
@@ -197,24 +211,24 @@ export default function Login({ onLogin }) {
                   e.target.style.boxShadow = '0 0 0 3px rgba(245, 158, 11, 0.1)';
                 }}
                 onBlur={(e) => {
-                  e.target.style.borderColor = '#334155';
+                  e.target.style.borderColor = isDark ? '#334155' : '#d1d5db';
                   e.target.style.boxShadow = 'none';
                 }}
               />
 
-              {/* Botão de mostrar/ocultar senha */}
+              {/* Botão mostrar/ocultar senha */}
               <button
                 type="button"
                 aria-label={mostrarSenha ? "Ocultar senha" : "Mostrar senha"}
                 onClick={() => setMostrarSenha(!mostrarSenha)}
                 style={{
                   position: 'absolute',
-                  right: '0.75rem', // mais próximo da borda, mas com padding suficiente
+                  right: '0.75rem',
                   top: '50%',
                   transform: 'translateY(-50%)',
                   background: 'none',
                   border: 'none',
-                  color: '#94a3b8',
+                  color: isDark ? '#94a3b8' : '#6b7280',
                   cursor: 'pointer',
                   padding: 0,
                   display: 'flex',
@@ -302,7 +316,7 @@ export default function Login({ onLogin }) {
               fontSize: '1rem',
               fontWeight: 600,
               background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-              color: 'white',
+              color: isDark ? 'white' : '#1f2937',
               border: 'none',
               borderRadius: '8px',
               cursor: carregando ? 'not-allowed' : 'pointer',
@@ -329,8 +343,8 @@ export default function Login({ onLogin }) {
                 <div style={{
                   width: '20px',
                   height: '20px',
-                  border: '2px solid rgba(255,255,255,0.3)',
-                  borderTopColor: 'white',
+                  border: `2px solid ${isDark ? 'rgba(255,255,255,0.3)' : 'rgba(31,41,55,0.3)'}`,
+                  borderTopColor: isDark ? 'white' : '#1f2937',
                   borderRadius: '50%',
                   animation: 'spin 1s linear infinite'
                 }}></div>
@@ -346,11 +360,11 @@ export default function Login({ onLogin }) {
         <div style={{
           marginTop: '2rem',
           paddingTop: '1.5rem',
-          borderTop: '1px solid #334155',
+          borderTop: `1px solid ${isDark ? '#334155' : '#e5e7eb'}`,
           textAlign: 'center'
         }}>
           <p style={{
-            color: '#94a3b8',
+            color: isDark ? '#94a3b8' : '#6b7280',
             fontSize: '0.75rem'
           }}>
             Acesso restrito aos colaboradores do RH
@@ -368,7 +382,7 @@ export default function Login({ onLogin }) {
         zIndex: 10
       }}>
         <p style={{
-          color: '#94a3b8',
+          color: isDark ? '#94a3b8' : '#6b7280',
           fontSize: '0.75rem'
         }}>
           © 2025 Michelc Assessoria Contábil

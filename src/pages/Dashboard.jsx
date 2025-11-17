@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '../config/supabase';
-import { useTheme } from '../contexts/ThemeContext'; // ✅ NOVO
+import { useTheme } from '../contexts/ThemeContext';
 import TabelaCandidatos from '../components/TabelaCandidatos';
 import ModalAdicionarCandidato from '../components/ModalAdicionarCandidato';
 import NotificationBell from '../components/NotificationBell';
@@ -12,7 +12,7 @@ import DashboardAnalytics from './DashboardAnalytics';
 import HistoricoCandidatos from './HistoricoCandidatos';
 
 export default function Dashboard() {
-  const { colors } = useTheme(); // ✅ NOVO
+  const { colors, isDark } = useTheme();
   const [modalAberto, setModalAberto] = useState(false);
   const [recarregar, setRecarregar] = useState(false);
   const [paginaAtual, setPaginaAtual] = useState('candidatos');
@@ -68,20 +68,29 @@ export default function Dashboard() {
             onClick={handleLogout}
             style={{
               padding: '10px 20px',
-              background: 'rgba(239, 68, 68, 0.2)',
-              color: '#fca5a5',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
+              background: isDark 
+                ? 'rgba(239, 68, 68, 0.2)' 
+                : 'rgba(239, 68, 68, 0.1)',
+              color: isDark ? '#fca5a5' : '#dc2626',
+              border: `1px solid ${isDark ? 'rgba(239, 68, 68, 0.3)' : 'rgba(239, 68, 68, 0.4)'}`,
               borderRadius: '8px',
               cursor: 'pointer',
               fontSize: '14px',
               fontWeight: '600',
-              transition: 'all 0.3s ease'
+              transition: 'all 0.3s ease',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
             }}
             onMouseEnter={(e) => {
-              e.target.style.background = 'rgba(239, 68, 68, 0.3)';
+              e.target.style.background = isDark 
+                ? 'rgba(239, 68, 68, 0.3)' 
+                : 'rgba(239, 68, 68, 0.2)';
             }}
             onMouseLeave={(e) => {
-              e.target.style.background = 'rgba(239, 68, 68, 0.2)';
+              e.target.style.background = isDark 
+                ? 'rgba(239, 68, 68, 0.2)' 
+                : 'rgba(239, 68, 68, 0.1)';
             }}
           >
             🚪 Sair
@@ -168,7 +177,7 @@ export default function Dashboard() {
                 style={{
                   padding: '12px 24px',
                   background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                  color: '#aaa1a1ff', // ✅ Branco está OK porque o fundo é verde
+                  color: '#ffffff',
                   border: 'none',
                   borderRadius: '10px',
                   cursor: 'pointer',

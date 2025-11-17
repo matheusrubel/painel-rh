@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../config/supabase';
+import { useTheme } from '../contexts/ThemeContext';
 import {
   buscarNotificacoes,
   marcarComoLida,
@@ -10,6 +11,7 @@ import {
 } from '../utils/notificacoes';
 
 export default function NotificationBell() {
+  const { colors, isDark } = useTheme();
   const [notificacoes, setNotificacoes] = useState([]);
   const [naoLidas, setNaoLidas] = useState(0);
   const [dropdownAberto, setDropdownAberto] = useState(false);
@@ -21,7 +23,6 @@ export default function NotificationBell() {
     inicializar();
   }, []);
 
-  // Fechar dropdown ao clicar fora
   useEffect(() => {
     const handleClickFora = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -39,14 +40,12 @@ export default function NotificationBell() {
   }, [dropdownAberto]);
 
   const inicializar = async () => {
-    // Obter usuário atual
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
     setUsuarioId(user.id);
     await carregarNotificacoes(user.id);
     
-    // Configurar Real-time
     const channel = supabase
       .channel('notificacoes')
       .on(
@@ -58,11 +57,8 @@ export default function NotificationBell() {
           filter: `usuario_id=eq.${user.id}`
         },
         (payload) => {
-          // Nova notificação recebida
           setNotificacoes(prev => [payload.new, ...prev]);
           setNaoLidas(prev => prev + 1);
-          
-          // Animação do sino
           animarSino();
         }
       )
@@ -78,7 +74,7 @@ export default function NotificationBell() {
     const { data } = await buscarNotificacoes(userId, false);
     
     if (data) {
-      setNotificacoes(data.slice(0, 20)); // Limitar a 20 notificações
+      setNotificacoes(data.slice(0, 20));
       setNaoLidas(data.filter(n => !n.lida).length);
     }
     
@@ -86,7 +82,6 @@ export default function NotificationBell() {
   };
 
   const handleNotificacaoClick = async (notificacao) => {
-    // Marcar como lida
     if (!notificacao.lida) {
       await marcarComoLida(notificacao.id);
       setNaoLidas(prev => Math.max(0, prev - 1));
@@ -95,7 +90,6 @@ export default function NotificationBell() {
       );
     }
 
-    // Navegar se tiver link
     if (notificacao.link) {
       window.location.hash = notificacao.link;
       setDropdownAberto(false);
@@ -131,7 +125,7 @@ export default function NotificationBell() {
         style={{
           position: 'relative',
           padding: '10px',
-          background: dropdownAberto ? '#334155' : 'transparent',
+          background: dropdownAberto ? colors.bg.tertiary : 'transparent',
           border: 'none',
           borderRadius: '8px',
           cursor: 'pointer',
@@ -141,19 +135,19 @@ export default function NotificationBell() {
           justifyContent: 'center'
         }}
         onMouseEnter={(e) => {
-          if (!dropdownAberto) e.target.style.background = '#334155';
+          if (!dropdownAberto) e.target.style.background = colors.bg.tertiary;
         }}
         onMouseLeave={(e) => {
           if (!dropdownAberto) e.target.style.background = 'transparent';
         }}
       >
-        {/* Ícone do Sino */}
+        {/* Ícone do Sino - Cor dinâmica baseada no tema */}
         <svg
           width="24"
           height="24"
           viewBox="0 0 24 24"
           fill="none"
-          stroke="#f8fafc"
+          stroke={colors.text.primary}
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -178,7 +172,7 @@ export default function NotificationBell() {
             justifyContent: 'center',
             fontSize: naoLidas > 9 ? '10px' : '11px',
             fontWeight: 'bold',
-            border: '2px solid #0f172a',
+            border: `2px solid ${colors.bg.secondary}`,
             animation: 'pulse 2s ease-in-out infinite'
           }}>
             {naoLidas > 99 ? '99+' : naoLidas}
@@ -194,10 +188,10 @@ export default function NotificationBell() {
           right: 0,
           width: '380px',
           maxHeight: '500px',
-          backgroundColor: '#1e293b',
-          border: '1px solid #334155',
+          backgroundColor: colors.bg.secondary,
+          border: `1px solid ${colors.border.primary}`,
           borderRadius: '12px',
-          boxShadow: '0 10px 40px rgba(0,0,0,0.5)',
+          boxShadow: colors.shadow.lg,
           zIndex: 1000,
           overflow: 'hidden',
           animation: 'fadeIn 0.2s ease-out'
@@ -205,14 +199,14 @@ export default function NotificationBell() {
           {/* Header do Dropdown */}
           <div style={{
             padding: '15px 20px',
-            borderBottom: '1px solid #334155',
+            borderBottom: `1px solid ${colors.border.primary}`,
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            backgroundColor: '#0f172a'
+            backgroundColor: colors.bg.primary
           }}>
             <h3 style={{
-              color: '#f8fafc',
+              color: colors.text.primary,
               fontSize: '16px',
               fontWeight: 'bold',
               margin: 0
@@ -233,7 +227,7 @@ export default function NotificationBell() {
                   fontWeight: 'bold',
                   transition: 'all 0.3s'
                 }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = '#334155'}
+                onMouseEnter={(e) => e.target.style.backgroundColor = colors.bg.tertiary}
                 onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
               >
                 Marcar todas como lidas
@@ -250,12 +244,12 @@ export default function NotificationBell() {
               <div style={{
                 padding: '40px 20px',
                 textAlign: 'center',
-                color: '#94a3b8'
+                color: colors.text.tertiary
               }}>
                 <div style={{
                   width: '30px',
                   height: '30px',
-                  border: '3px solid #334155',
+                  border: `3px solid ${colors.bg.tertiary}`,
                   borderTopColor: '#f59e0b',
                   borderRadius: '50%',
                   animation: 'spin 1s linear infinite',
@@ -267,9 +261,9 @@ export default function NotificationBell() {
               <div style={{
                 padding: '40px 20px',
                 textAlign: 'center',
-                color: '#64748b'
+                color: colors.text.muted
               }}>
-                <div style={{ fontSize: '48px', marginBottom: '10px' }}>🔕</div>
+                <div style={{ fontSize: '48px', marginBottom: '10px' }}>📕</div>
                 <p style={{ fontSize: '14px' }}>Nenhuma notificação</p>
               </div>
             ) : (
@@ -279,7 +273,7 @@ export default function NotificationBell() {
                   onClick={() => handleNotificacaoClick(notificacao)}
                   style={{
                     padding: '15px 20px',
-                    borderBottom: '1px solid #334155',
+                    borderBottom: `1px solid ${colors.border.primary}`,
                     cursor: notificacao.link ? 'pointer' : 'default',
                     backgroundColor: notificacao.lida ? 'transparent' : 'rgba(245, 158, 11, 0.05)',
                     transition: 'background-color 0.2s',
@@ -289,7 +283,7 @@ export default function NotificationBell() {
                   }}
                   onMouseEnter={(e) => {
                     if (notificacao.link) {
-                      e.currentTarget.style.backgroundColor = '#334155';
+                      e.currentTarget.style.backgroundColor = colors.bg.tertiary;
                     }
                   }}
                   onMouseLeave={(e) => {
@@ -316,7 +310,7 @@ export default function NotificationBell() {
                   {/* Conteúdo */}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{
-                      color: '#f8fafc',
+                      color: colors.text.primary,
                       fontSize: '14px',
                       fontWeight: notificacao.lida ? 'normal' : 'bold',
                       marginBottom: '4px'
@@ -324,7 +318,7 @@ export default function NotificationBell() {
                       {notificacao.titulo}
                     </div>
                     <div style={{
-                      color: '#94a3b8',
+                      color: colors.text.tertiary,
                       fontSize: '13px',
                       lineHeight: '1.4',
                       marginBottom: '6px'
@@ -332,7 +326,7 @@ export default function NotificationBell() {
                       {notificacao.mensagem}
                     </div>
                     <div style={{
-                      color: '#64748b',
+                      color: colors.text.muted,
                       fontSize: '11px'
                     }}>
                       {tempoRelativo(notificacao.criado_em)}
@@ -359,9 +353,9 @@ export default function NotificationBell() {
           {notificacoes.length > 0 && (
             <div style={{
               padding: '12px 20px',
-              borderTop: '1px solid #334155',
+              borderTop: `1px solid ${colors.border.primary}`,
               textAlign: 'center',
-              backgroundColor: '#0f172a'
+              backgroundColor: colors.bg.primary
             }}>
               <button
                 style={{
@@ -376,7 +370,7 @@ export default function NotificationBell() {
                   fontWeight: 'bold',
                   transition: 'all 0.3s'
                 }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = '#334155'}
+                onMouseEnter={(e) => e.target.style.backgroundColor = colors.bg.tertiary}
                 onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
               >
                 Ver todas as notificações
@@ -422,24 +416,6 @@ export default function NotificationBell() {
 
         #notification-bell.shake {
           animation: shake 0.5s ease-in-out;
-        }
-
-        /* Scrollbar customizada */
-        div::-webkit-scrollbar {
-          width: 6px;
-        }
-
-        div::-webkit-scrollbar-track {
-          background: #1e293b;
-        }
-
-        div::-webkit-scrollbar-thumb {
-          background: #475569;
-          borderRadius: 3px;
-        }
-
-        div::-webkit-scrollbar-thumb:hover {
-          background: #64748b;
         }
       `}</style>
     </div>
