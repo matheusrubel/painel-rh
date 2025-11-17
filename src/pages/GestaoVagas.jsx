@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../config/supabase';
 import ModalCriarVaga from '../components/ModalCriarVaga';
-import { useTheme } from '../contexts/ThemeContext'; // ✅ NOVO
+import { useTheme } from '../contexts/ThemeContext';
+import { showSuccess, showError } from '../utils/toast';
 
 export default function GestaoVagas() {
-  const { colors } = useTheme(); // ✅ NOVO
+  const { colors } = useTheme();
   const [vagas, setVagas] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [modalAberto, setModalAberto] = useState(false);
   const [vagaExpandida, setVagaExpandida] = useState(null);
+  const [modalDeletar, setModalDeletar] = useState({ isOpen: false, vagaId: null, vagaTitulo: '' });
 
   useEffect(() => {
     fetchVagas();
@@ -39,15 +41,18 @@ export default function GestaoVagas() {
     }
   };
 
-  const deletarVaga = async (id) => {
-    if (window.confirm('Deseja realmente deletar esta vaga?')) {
-      const { error } = await supabase.from('vagas').delete().eq('id', id);
-      if (!error) {
-        fetchVagas();
-        alert('Vaga deletada!');
-      }
-    }
+  const abrirModalDeletar = (id, titulo) => {
+    setModalDeletar({ isOpen: true, vagaId: id, vagaTitulo: titulo });
   };
+
+  const confirmarDeletar = async () => {
+  const { error } = await supabase.from('vagas').delete().eq('id', modalDeletar.vagaId);
+  if (!error) {
+    fetchVagas();
+    showSuccess('✅ Vaga deletada com sucesso!');  // ✅ USAR showSuccess
+  }
+  setModalDeletar({ isOpen: false, vagaId: null, vagaTitulo: '' });
+};
 
   const toggleExpand = (id) => {
     setVagaExpandida(vagaExpandida === id ? null : id);
@@ -168,7 +173,6 @@ export default function GestaoVagas() {
               transition: 'all 0.3s',
               boxShadow: colors.shadow.sm
             }}>
-              {/* Card Header */}
               <div 
                 onClick={() => toggleExpand(vaga.id)}
                 style={{ 
@@ -187,7 +191,6 @@ export default function GestaoVagas() {
                       {vaga.titulo}
                     </h3>
                     
-                    {/* Badge Prioridade */}
                     {vaga.prioridade && (
                       <span style={{
                         padding: '3px 10px',
@@ -209,10 +212,7 @@ export default function GestaoVagas() {
                     {vaga.modalidade && <span>{getBadgeModalidade(vaga.modalidade)} {vaga.modalidade}</span>}
                     {vaga.tipo_contrato && <span>📄 {vaga.tipo_contrato}</span>}
                     {vaga.numero_vagas && vaga.numero_vagas > 1 && (
-                      <span style={{ 
-                        color: '#f59e0b',
-                        fontWeight: 'bold'
-                      }}>
+                      <span style={{ color: '#f59e0b', fontWeight: 'bold' }}>
                         🎯 {vaga.numero_vagas} vagas
                       </span>
                     )}
@@ -246,14 +246,12 @@ export default function GestaoVagas() {
                 </div>
               </div>
 
-              {/* Detalhes Expandidos */}
               {vagaExpandida === vaga.id && (
                 <div style={{ 
                   padding: '20px', 
                   borderTop: `1px solid ${colors.border.primary}`,
                   animation: 'slideDown 0.3s ease-out'
                 }}>
-                  {/* Informações Principais */}
                   <div style={{ 
                     display: 'grid', 
                     gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
@@ -336,7 +334,6 @@ export default function GestaoVagas() {
                     </div>
                   )}
 
-                  {/* Botões de Ação */}
                   <div style={{ 
                     display: 'flex', 
                     gap: '10px', 
@@ -362,7 +359,7 @@ export default function GestaoVagas() {
                       {vaga.ativa ? '⏸️ Desativar' : '▶️ Ativar'}
                     </button>
                     <button
-                      onClick={() => deletarVaga(vaga.id)}
+                      onClick={() => abrirModalDeletar(vaga.id, vaga.titulo)}
                       style={{
                         padding: '10px 18px',
                         backgroundColor: '#ef4444',
@@ -390,6 +387,137 @@ export default function GestaoVagas() {
         onClose={() => setModalAberto(false)}
         onVagaCriada={fetchVagas}
       />
+
+      {modalDeletar.isOpen && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.75)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 10000
+        }}>
+          <div style={{
+            background: colors.bg.secondary,
+            borderRadius: '16px',
+            padding: '32px',
+            maxWidth: '480px',
+            width: '90%',
+            boxShadow: colors.shadow.lg,
+            border: `2px solid ${colors.status.error}`
+          }}>
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '20px'
+            }}>
+              <div style={{
+                width: '80px',
+                height: '80px',
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(220, 38, 38, 0.3) 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '40px'
+              }}>
+                🗑️
+              </div>
+
+              <div style={{ textAlign: 'center' }}>
+                <h3 style={{
+                  color: colors.text.primary,
+                  margin: '0 0 12px 0',
+                  fontSize: '22px',
+                  fontWeight: '700'
+                }}>
+                  Deletar Vaga?
+                </h3>
+                <p style={{
+                  color: colors.text.secondary,
+                  margin: '0 0 8px 0',
+                  fontSize: '15px'
+                }}>
+                  Tem certeza que deseja deletar a vaga:
+                </p>
+                <p style={{
+                  color: colors.status.error,
+                  fontWeight: '700',
+                  fontSize: '16px',
+                  margin: 0
+                }}>
+                  "{modalDeletar.vagaTitulo}"
+                </p>
+              </div>
+
+              <div style={{
+                background: 'rgba(239, 68, 68, 0.1)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                borderRadius: '8px',
+                padding: '12px 16px',
+                width: '100%'
+              }}>
+                <p style={{
+                  color: colors.status.error,
+                  fontSize: '13px',
+                  margin: 0,
+                  textAlign: 'center',
+                  fontWeight: '600'
+                }}>
+                  ⚠️ Esta ação não pode ser desfeita!
+                </p>
+              </div>
+
+              <div style={{
+                display: 'flex',
+                gap: '12px',
+                width: '100%',
+                marginTop: '8px'
+              }}>
+                <button
+                  onClick={() => setModalDeletar({ isOpen: false, vagaId: null, vagaTitulo: '' })}
+                  style={{
+                    flex: 1,
+                    padding: '14px',
+                    background: colors.bg.tertiary,
+                    color: colors.text.primary,
+                    border: `1px solid ${colors.border.primary}`,
+                    borderRadius: '10px',
+                    cursor: 'pointer',
+                    fontSize: '15px',
+                    fontWeight: '600'
+                  }}
+                >
+                  ✕ Cancelar
+                </button>
+                <button
+                  onClick={confirmarDeletar}
+                  style={{
+                    flex: 1,
+                    padding: '14px',
+                    background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '10px',
+                    cursor: 'pointer',
+                    fontSize: '15px',
+                    fontWeight: '700',
+                    boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)'
+                  }}
+                >
+                  🗑️ Deletar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style>{`
         @keyframes slideDown {

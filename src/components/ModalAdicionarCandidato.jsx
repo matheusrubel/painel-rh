@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '../config/supabase';
+import { useTheme } from '../contexts/ThemeContext';
 import { candidatoSchema } from '../schemas/candidatoSchema';
 import { showSuccess, showError } from '../utils/toast';
 import { handleError } from '../utils/errorHandler';
@@ -7,6 +8,7 @@ import { useHistoricoCandidato } from '../hooks/useHistoricoCandidato';
 import AlertaDuplicataHistorico from './AlertaDuplicataHistorico';
 
 export default function ModalAdicionarCandidato({ isOpen, onClose, onCandidatoAdicionado }) {
+  const { colors } = useTheme();
   const [formData, setFormData] = useState({
     nome_completo: '',
     Email: '',
@@ -20,7 +22,6 @@ export default function ModalAdicionarCandidato({ isOpen, onClose, onCandidatoAd
   const [nomeArquivo, setNomeArquivo] = useState('');
   const [carregando, setCarregando] = useState(false);
 
-  // Hook de histórico
   const { verificarDuplicata } = useHistoricoCandidato();
   const [alertaHistorico, setAlertaHistorico] = useState(null);
   const [dadosTemporarios, setDadosTemporarios] = useState(null);
@@ -62,7 +63,6 @@ export default function ModalAdicionarCandidato({ isOpen, onClose, onCandidatoAd
       return;
     }
 
-    // VERIFICAR HISTÓRICO ANTES DE SALVAR
     const resultado = await verificarDuplicata(
       formData.nome_completo,
       formData.telefone,
@@ -70,13 +70,11 @@ export default function ModalAdicionarCandidato({ isOpen, onClose, onCandidatoAd
     );
 
     if (resultado.isDuplicata) {
-      // Salvar dados temporariamente e mostrar alerta
       setDadosTemporarios(formData);
       setAlertaHistorico(resultado.historico);
-      return; // Não salva ainda, aguarda confirmação
+      return;
     }
 
-    // Se não tem duplicata, salva direto
     await salvarCandidato(formData);
   };
 
@@ -96,7 +94,7 @@ export default function ModalAdicionarCandidato({ isOpen, onClose, onCandidatoAd
 
         if (uploadError) throw uploadError;
 
-        const { data: urlData } = supabase.storage
+        const { data: urlData } = supabase.storage 
           .from('curriculos')
           .getPublicUrl(nomeUnico);
 
@@ -114,7 +112,6 @@ export default function ModalAdicionarCandidato({ isOpen, onClose, onCandidatoAd
 
       showSuccess('✅ Candidato adicionado com sucesso!');
       
-      // Reset form
       setFormData({
         nome_completo: '',
         Email: '',
@@ -166,27 +163,26 @@ export default function ModalAdicionarCandidato({ isOpen, onClose, onCandidatoAd
       padding: '20px'
     }}>
       <div style={{
-        background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
+        background: colors.bg.secondary,
         borderRadius: '16px',
         padding: '30px',
         maxWidth: '600px',
         width: '100%',
         maxHeight: '90vh',
         overflowY: 'auto',
-        border: '1px solid #475569',
-        boxShadow: '0 25px 50px rgba(0,0,0,0.5)'
+        border: `1px solid ${colors.border.primary}`,
+        boxShadow: colors.shadow.lg
       }}>
-        {/* Header */}
         <div style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
           marginBottom: '24px',
           paddingBottom: '16px',
-          borderBottom: '1px solid #475569'
+          borderBottom: `1px solid ${colors.border.primary}`
         }}>
           <h2 style={{
-            color: '#f8fafc',
+            color: colors.text.primary,
             margin: 0,
             fontSize: '22px',
             fontWeight: '700'
@@ -198,7 +194,7 @@ export default function ModalAdicionarCandidato({ isOpen, onClose, onCandidatoAd
             style={{
               background: 'transparent',
               border: 'none',
-              color: '#94a3b8',
+              color: colors.text.tertiary,
               fontSize: '24px',
               cursor: 'pointer',
               padding: '4px 8px',
@@ -211,19 +207,17 @@ export default function ModalAdicionarCandidato({ isOpen, onClose, onCandidatoAd
             }}
             onMouseLeave={(e) => {
               e.target.style.background = 'transparent';
-              e.target.style.color = '#94a3b8';
+              e.target.style.color = colors.text.tertiary;
             }}
           >
             ✕
           </button>
         </div>
 
-        {/* Formulário */}
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          {/* Nome Completo */}
           <div>
             <label style={{
-              color: '#cbd5e1',
+              color: colors.text.secondary,
               display: 'block',
               marginBottom: '8px',
               fontSize: '14px',
@@ -240,23 +234,22 @@ export default function ModalAdicionarCandidato({ isOpen, onClose, onCandidatoAd
               style={{
                 width: '100%',
                 padding: '12px',
-                background: '#0f172a',
-                border: '1px solid #475569',
+                background: colors.bg.primary,
+                border: `1px solid ${colors.border.primary}`,
                 borderRadius: '8px',
-                color: '#f8fafc',
+                color: colors.text.primary,
                 fontSize: '14px',
                 outline: 'none',
                 transition: 'border-color 0.2s'
               }}
               onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
-              onBlur={(e) => e.target.style.borderColor = '#475569'}
+              onBlur={(e) => e.target.style.borderColor = colors.border.primary}
             />
           </div>
 
-          {/* Email */}
           <div>
             <label style={{
-              color: '#cbd5e1',
+              color: colors.text.secondary,
               display: 'block',
               marginBottom: '8px',
               fontSize: '14px',
@@ -273,23 +266,22 @@ export default function ModalAdicionarCandidato({ isOpen, onClose, onCandidatoAd
               style={{
                 width: '100%',
                 padding: '12px',
-                background: '#0f172a',
-                border: '1px solid #475569',
+                background: colors.bg.primary,
+                border: `1px solid ${colors.border.primary}`,
                 borderRadius: '8px',
-                color: '#f8fafc',
+                color: colors.text.primary,
                 fontSize: '14px',
                 outline: 'none'
               }}
               onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
-              onBlur={(e) => e.target.style.borderColor = '#475569'}
+              onBlur={(e) => e.target.style.borderColor = colors.border.primary}
             />
           </div>
 
-          {/* Telefone e CPF */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <div>
               <label style={{
-                color: '#cbd5e1',
+                color: colors.text.secondary,
                 display: 'block',
                 marginBottom: '8px',
                 fontSize: '14px',
@@ -306,21 +298,21 @@ export default function ModalAdicionarCandidato({ isOpen, onClose, onCandidatoAd
                 style={{
                   width: '100%',
                   padding: '12px',
-                  background: '#0f172a',
-                  border: '1px solid #475569',
+                  background: colors.bg.primary,
+                  border: `1px solid ${colors.border.primary}`,
                   borderRadius: '8px',
-                  color: '#f8fafc',
+                  color: colors.text.primary,
                   fontSize: '14px',
                   outline: 'none'
                 }}
                 onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
-                onBlur={(e) => e.target.style.borderColor = '#475569'}
+                onBlur={(e) => e.target.style.borderColor = colors.border.primary}
               />
             </div>
 
             <div>
               <label style={{
-                color: '#cbd5e1',
+                color: colors.text.secondary,
                 display: 'block',
                 marginBottom: '8px',
                 fontSize: '14px',
@@ -337,23 +329,22 @@ export default function ModalAdicionarCandidato({ isOpen, onClose, onCandidatoAd
                 style={{
                   width: '100%',
                   padding: '12px',
-                  background: '#0f172a',
-                  border: '1px solid #475569',
+                  background: colors.bg.primary,
+                  border: `1px solid ${colors.border.primary}`,
                   borderRadius: '8px',
-                  color: '#f8fafc',
+                  color: colors.text.primary,
                   fontSize: '14px',
                   outline: 'none'
                 }}
                 onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
-                onBlur={(e) => e.target.style.borderColor = '#475569'}
+                onBlur={(e) => e.target.style.borderColor = colors.border.primary}
               />
             </div>
           </div>
 
-          {/* Cargo Pretendido */}
           <div>
             <label style={{
-              color: '#cbd5e1',
+              color: colors.text.secondary,
               display: 'block',
               marginBottom: '8px',
               fontSize: '14px',
@@ -370,22 +361,21 @@ export default function ModalAdicionarCandidato({ isOpen, onClose, onCandidatoAd
               style={{
                 width: '100%',
                 padding: '12px',
-                background: '#0f172a',
-                border: '1px solid #475569',
+                background: colors.bg.primary,
+                border: `1px solid ${colors.border.primary}`,
                 borderRadius: '8px',
-                color: '#f8fafc',
+                color: colors.text.primary,
                 fontSize: '14px',
                 outline: 'none'
               }}
               onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
-              onBlur={(e) => e.target.style.borderColor = '#475569'}
+              onBlur={(e) => e.target.style.borderColor = colors.border.primary}
             />
           </div>
 
-          {/* Currículo */}
           <div>
             <label style={{
-              color: '#cbd5e1',
+              color: colors.text.secondary,
               display: 'block',
               marginBottom: '8px',
               fontSize: '14px',
@@ -396,8 +386,8 @@ export default function ModalAdicionarCandidato({ isOpen, onClose, onCandidatoAd
             <label style={{
               display: 'block',
               padding: '12px',
-              background: '#0f172a',
-              border: '2px dashed #475569',
+              background: colors.bg.primary,
+              border: `2px dashed ${colors.border.primary}`,
               borderRadius: '8px',
               textAlign: 'center',
               cursor: 'pointer',
@@ -408,8 +398,8 @@ export default function ModalAdicionarCandidato({ isOpen, onClose, onCandidatoAd
               e.target.style.background = 'rgba(59, 130, 246, 0.05)';
             }}
             onMouseLeave={(e) => {
-              e.target.style.borderColor = '#475569';
-              e.target.style.background = '#0f172a';
+              e.target.style.borderColor = colors.border.primary;
+              e.target.style.background = colors.bg.primary;
             }}>
               <input
                 type="file"
@@ -417,16 +407,15 @@ export default function ModalAdicionarCandidato({ isOpen, onClose, onCandidatoAd
                 accept=".pdf,.doc,.docx"
                 style={{ display: 'none' }}
               />
-              <span style={{ color: '#94a3b8', fontSize: '14px' }}>
+              <span style={{ color: colors.text.tertiary, fontSize: '14px' }}>
                 {nomeArquivo || '📎 Clique para selecionar arquivo'}
               </span>
             </label>
           </div>
 
-          {/* Mensagem/Observações */}
           <div>
             <label style={{
-              color: '#cbd5e1',
+              color: colors.text.secondary,
               display: 'block',
               marginBottom: '8px',
               fontSize: '14px',
@@ -443,21 +432,20 @@ export default function ModalAdicionarCandidato({ isOpen, onClose, onCandidatoAd
               style={{
                 width: '100%',
                 padding: '12px',
-                background: '#0f172a',
-                border: '1px solid #475569',
+                background: colors.bg.primary,
+                border: `1px solid ${colors.border.primary}`,
                 borderRadius: '8px',
-                color: '#f8fafc',
+                color: colors.text.primary,
                 fontSize: '14px',
                 outline: 'none',
                 resize: 'vertical',
                 fontFamily: 'inherit'
               }}
               onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
-              onBlur={(e) => e.target.style.borderColor = '#475569'}
+              onBlur={(e) => e.target.style.borderColor = colors.border.primary}
             />
           </div>
 
-          {/* Botões */}
           <div style={{ display: 'flex', gap: '12px', paddingTop: '8px' }}>
             <button
               type="button"
@@ -466,9 +454,9 @@ export default function ModalAdicionarCandidato({ isOpen, onClose, onCandidatoAd
               style={{
                 flex: 1,
                 padding: '12px',
-                background: 'rgba(71, 85, 105, 0.3)',
-                color: '#f1f5f9',
-                border: '1px solid rgba(71, 85, 105, 0.5)',
+                background: colors.bg.hover,
+                color: colors.text.primary,
+                border: `1px solid ${colors.border.primary}`,
                 borderRadius: '10px',
                 cursor: carregando ? 'not-allowed' : 'pointer',
                 fontWeight: '600',
@@ -479,30 +467,30 @@ export default function ModalAdicionarCandidato({ isOpen, onClose, onCandidatoAd
               Cancelar
             </button>
             <button
-              type="submit"
-              disabled={carregando}
-              style={{
-                flex: 1,
-                padding: '12px',
-                background: carregando
-                  ? 'rgba(59, 130, 246, 0.3)'
-                  : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-                color: 'white',
-                border: 'none',
-                borderRadius: '10px',
-                cursor: carregando ? 'not-allowed' : 'pointer',
-                fontWeight: '700',
-                fontSize: '14px',
-                boxShadow: carregando ? 'none' : '0 4px 12px rgba(59, 130, 246, 0.3)'
-              }}
-            >
-              {carregando ? '⏳ Salvando...' : '✅ Adicionar Candidato'}
-            </button>
+            type="submit"
+            disabled={carregando}
+            style={{
+              flex: 1,
+              padding: '12px',
+              background: carregando
+                ? colors.bg.tertiary
+                : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+              color: '#747171ff',
+              border: 'none',
+              borderRadius: '10px',
+              cursor: carregando ? 'not-allowed' : 'pointer',
+              fontWeight: '700',
+              fontSize: '14px',
+              boxShadow: carregando ? 'none' : '0 4px 12px rgba(16, 185, 129, 0.3)',
+              opacity: 1
+            }}
+          >
+            {carregando ? '⏳ Salvando...' : '✅ Adicionar Candidato'}
+          </button>
           </div>
         </form>
       </div>
 
-      {/* Modal de Alerta de Histórico */}
       {alertaHistorico && (
         <AlertaDuplicataHistorico
           historico={alertaHistorico}

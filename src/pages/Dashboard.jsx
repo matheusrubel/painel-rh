@@ -168,15 +168,14 @@ export default function Dashboard() {
                 style={{
                   padding: '12px 24px',
                   background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                  color: '#ffffff', // ✅ Branco puro
+                  color: '#aaa1a1ff', // ✅ Branco está OK porque o fundo é verde
                   border: 'none',
                   borderRadius: '10px',
                   cursor: 'pointer',
                   fontSize: '14px',
                   fontWeight: '700',
                   boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
-                  transition: 'all 0.3s ease',
-                  opacity: 1 // ✅ Garantir opacidade total
+                  transition: 'all 0.3s ease'
                 }}
                 onMouseEnter={(e) => {
                   e.target.style.transform = 'translateY(-2px)';
