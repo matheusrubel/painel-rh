@@ -15,7 +15,6 @@ export default function Login({ onLogin }) {
   // Estados dos bonecos
   const [focoCampo, setFocoCampo] = useState('none');
   const [olhosX, setOlhosX] = useState(0);
-  const [erroAnimacao, setErroAnimacao] = useState(false);
 
 
   const handleLogin = async (e) => {
@@ -31,8 +30,6 @@ export default function Login({ onLogin }) {
 
     if (error) {
       setErro('Credenciais inválidas');
-      setErroAnimacao(true);
-      setTimeout(() => setErroAnimacao(false), 1000);
       setCarregando(false);
     } else {
       onLogin();
@@ -81,17 +78,15 @@ export default function Login({ onLogin }) {
 
   const BonecoProfissional = ({ index, tamanho = 80 }) => {
     const olhosFechados = focoCampo === 'senha' && !mostrarSenha;
-    const surpreso = focoCampo === 'senha' && mostrarSenha;
     
     return (
       <div style={{
         width: `${tamanho}px`,
         height: `${tamanho * 1.4}px`,
         position: 'relative',
-        transition: 'transform 0.4s ease',
-        animation: erroAnimacao ? 'shake 0.5s ease' : 'none'
+        transition: 'transform 0.4s ease'
       }}>
-        {/* Corpo - FIXO tema claro */}
+        {/* Corpo */}
         <div style={{
           position: 'absolute',
           bottom: 0,
@@ -99,7 +94,9 @@ export default function Login({ onLogin }) {
           transform: 'translateX(-50%)',
           width: `${tamanho * 0.7}px`,
           height: `${tamanho * 0.6}px`,
-          background: 'linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%)',
+          background: isDark 
+            ? 'linear-gradient(135deg, #475569 0%, #334155 100%)'
+            : 'linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%)',
           borderRadius: `${tamanho * 0.35}px ${tamanho * 0.35}px 0 0`,
           boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
         }}>
@@ -117,7 +114,7 @@ export default function Login({ onLogin }) {
           }} />
         </div>
 
-        {/* Cabeça - FIXO tema claro */}
+        {/* Cabeça */}
         <div style={{
           position: 'absolute',
           top: 0,
@@ -125,20 +122,22 @@ export default function Login({ onLogin }) {
           transform: 'translateX(-50%)',
           width: `${tamanho * 0.75}px`,
           height: `${tamanho * 0.75}px`,
-          background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+          background: isDark 
+            ? 'linear-gradient(135deg, #fde68a 0%, #fbbf24 100%)'
+            : 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
           borderRadius: '50%',
           boxShadow: '0 6px 20px rgba(251, 191, 36, 0.25)',
           transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
           overflow: 'hidden'
         }}>
-          {/* Chapéu/Cabelo - FIXO */}
+          {/* Chapéu/Cabelo */}
           <div style={{
             position: 'absolute',
             top: '-5%',
             left: '10%',
             right: '10%',
             height: '35%',
-            background: '#374151',
+            background: isDark ? '#1e293b' : '#374151',
             borderRadius: '50% 50% 0 0'
           }} />
 
@@ -150,12 +149,11 @@ export default function Login({ onLogin }) {
                 top: '40%',
                 left: '22%',
                 width: '18%',
-                height: surpreso ? '22%' : '18%',
+                height: '18%',
                 background: 'white',
                 borderRadius: '50%',
                 boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)',
-                overflow: 'hidden',
-                transition: 'height 0.3s ease'
+                overflow: 'hidden'
               }}>
                 <div style={{
                   width: '60%',
@@ -174,12 +172,11 @@ export default function Login({ onLogin }) {
                 top: '40%',
                 right: '22%',
                 width: '18%',
-                height: surpreso ? '22%' : '18%',
+                height: '18%',
                 background: 'white',
                 borderRadius: '50%',
                 boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)',
-                overflow: 'hidden',
-                transition: 'height 0.3s ease'
+                overflow: 'hidden'
               }}>
                 <div style={{
                   width: '60%',
@@ -195,15 +192,15 @@ export default function Login({ onLogin }) {
               </div>
             </>
           ) : (
-            // Olhos fechados PRETOS
+            // Riscos brancos
             <>
               <div style={{
                 position: 'absolute',
                 top: '48%',
                 left: '22%',
                 width: '18%',
-                height: '3px',
-                background: '#1f2937',
+                height: '2.5px',
+                background: '#ffffff',
                 borderRadius: '2px',
                 transition: 'all 0.2s ease'
               }} />
@@ -212,26 +209,24 @@ export default function Login({ onLogin }) {
                 top: '48%',
                 right: '22%',
                 width: '18%',
-                height: '3px',
-                background: '#1f2937',
+                height: '2.5px',
+                background: '#ffffff',
                 borderRadius: '2px',
                 transition: 'all 0.2s ease'
               }} />
             </>
           )}
 
-          {/* Boca - reage ao erro */}
+          {/* Boca */}
           <div style={{
             position: 'absolute',
-            bottom: erroAnimacao ? '20%' : '22%',
+            bottom: '22%',
             left: '50%',
             transform: 'translateX(-50%)',
-            width: erroAnimacao ? '25%' : '35%',
-            height: erroAnimacao ? '12%' : '8%',
-            borderBottom: erroAnimacao ? 'none' : '3px solid #92400e',
-            borderRadius: erroAnimacao ? '50%' : '0 0 50px 50px',
-            background: erroAnimacao ? '#92400e' : 'transparent',
-            transition: 'all 0.3s ease'
+            width: '35%',
+            height: '8%',
+            borderBottom: `3px solid #92400e`,
+            borderRadius: '0 0 50px 50px'
           }} />
         </div>
       </div>
@@ -586,13 +581,11 @@ export default function Login({ onLogin }) {
                 fontSize: '1rem',
                 fontWeight: 700,
                 background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                color: isDark ? '#ffffff' : '#1f2937',
-                border: isDark ? 'none' : '2px solid #d97706',
+                color: '#ffffff',
+                border: 'none',
                 borderRadius: '10px',
                 cursor: carregando ? 'not-allowed' : 'pointer',
-                boxShadow: isDark 
-                  ? '0 4px 14px rgba(245, 158, 11, 0.4)'
-                  : '0 4px 14px rgba(217, 119, 6, 0.5)',
+                boxShadow: '0 4px 14px rgba(245, 158, 11, 0.4)',
                 transition: 'all 0.3s ease',
                 display: 'flex',
                 alignItems: 'center',
@@ -603,16 +596,12 @@ export default function Login({ onLogin }) {
               onMouseEnter={(e) => {
                 if (!carregando) {
                   e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = isDark 
-                    ? '0 8px 20px rgba(245, 158, 11, 0.5)'
-                    : '0 8px 20px rgba(217, 119, 6, 0.6)';
+                  e.currentTarget.style.boxShadow = '0 8px 20px rgba(245, 158, 11, 0.5)';
                 }
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = isDark 
-                  ? '0 4px 14px rgba(245, 158, 11, 0.4)'
-                  : '0 4px 14px rgba(217, 119, 6, 0.5)';
+                e.currentTarget.style.boxShadow = '0 4px 14px rgba(245, 158, 11, 0.4)';
               }}
             >
               {carregando ? (
@@ -656,11 +645,6 @@ export default function Login({ onLogin }) {
         }
         @keyframes spin {
           to { transform: rotate(360deg); }
-        }
-        @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-          20%, 40%, 60%, 80% { transform: translateX(5px); }
         }
       `}</style>
     </div>
