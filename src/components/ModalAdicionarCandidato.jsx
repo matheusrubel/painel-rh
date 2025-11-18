@@ -21,14 +21,71 @@ export default function ModalAdicionarCandidato({ isOpen, onClose, onCandidatoAd
   const [arquivo, setArquivo] = useState(null);
   const [nomeArquivo, setNomeArquivo] = useState('');
   const [carregando, setCarregando] = useState(false);
+  const [cpfInvalido, setCpfInvalido] = useState(false);
 
   const { verificarDuplicata } = useHistoricoCandidato();
   const [alertaHistorico, setAlertaHistorico] = useState(null);
   const [dadosTemporarios, setDadosTemporarios] = useState(null);
 
+  // ✅ FUNÇÃO DE FORMATAÇÃO DE CPF
+  const formatarCPF = (valor) => {
+    const numeros = valor.replace(/\D/g, '');
+    if (numeros.length <= 11) {
+      return numeros
+        .replace(/(\d{3})(\d)/, '$1.$2')
+        .replace(/(\d{3})(\d)/, '$1.$2')
+        .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+    }
+    return valor;
+  };
+
+  // ✅ FUNÇÃO DE VALIDAÇÃO DE CPF
+  const validarCPF = (cpf) => {
+    const numeros = cpf.replace(/\D/g, '');
+    
+    if (numeros.length !== 11) return false;
+    if (/^(\d)\1+$/.test(numeros)) return false; // Todos números iguais
+    
+    let soma = 0;
+    let resto;
+    
+    for (let i = 1; i <= 9; i++) {
+      soma += parseInt(numeros.substring(i - 1, i)) * (11 - i);
+    }
+    
+    resto = (soma * 10) % 11;
+    if (resto === 10 || resto === 11) resto = 0;
+    if (resto !== parseInt(numeros.substring(9, 10))) return false;
+    
+    soma = 0;
+    for (let i = 1; i <= 10; i++) {
+      soma += parseInt(numeros.substring(i - 1, i)) * (12 - i);
+    }
+    
+    resto = (soma * 10) % 11;
+    if (resto === 10 || resto === 11) resto = 0;
+    if (resto !== parseInt(numeros.substring(10, 11))) return false;
+    
+    return true;
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    
+    // ✅ Formatar CPF enquanto digita
+    if (name === 'cpf') {
+      const cpfFormatado = formatarCPF(value);
+      setFormData(prev => ({ ...prev, [name]: cpfFormatado }));
+      
+      // Validar CPF quando completar 14 caracteres (000.000.000-00)
+      if (cpfFormatado.length === 14) {
+        setCpfInvalido(!validarCPF(cpfFormatado));
+      } else {
+        setCpfInvalido(false);
+      }
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleFileChange = (e) => {
@@ -60,6 +117,17 @@ export default function ModalAdicionarCandidato({ isOpen, onClose, onCandidatoAd
 
     if (!formData.nome_completo || !formData.Email) {
       showError('Preencha nome e email');
+      return;
+    }
+
+    // ✅ VALIDAÇÃO DE CPF OBRIGATÓRIO
+    if (!formData.cpf) {
+      showError('⚠️ CPF é obrigatório!');
+      return;
+    }
+
+    if (cpfInvalido || !validarCPF(formData.cpf)) {
+      showError('⚠️ CPF inválido! Verifique o número digitado.');
       return;
     }
 
@@ -122,6 +190,7 @@ export default function ModalAdicionarCandidato({ isOpen, onClose, onCandidatoAd
       });
       setArquivo(null);
       setNomeArquivo('');
+      setCpfInvalido(false);
 
       if (onCandidatoAdicionado) {
         onCandidatoAdicionado();
@@ -318,7 +387,7 @@ export default function ModalAdicionarCandidato({ isOpen, onClose, onCandidatoAd
                 fontSize: '14px',
                 fontWeight: '600'
               }}>
-                CPF
+                CPF * {cpfInvalido && <span style={{ color: '#ef4444', fontSize: '12px' }}>(inválido)</span>}
               </label>
               <input
                 type="text"
@@ -326,19 +395,42 @@ export default function ModalAdicionarCandidato({ isOpen, onClose, onCandidatoAd
                 value={formData.cpf}
                 onChange={handleChange}
                 placeholder="000.000.000-00"
+                maxLength="14"
+                required
                 style={{
                   width: '100%',
                   padding: '12px',
                   background: colors.bg.primary,
-                  border: `1px solid ${colors.border.primary}`,
+                  border: `2px solid ${cpfInvalido ? '#ef4444' : colors.border.primary}`,
                   borderRadius: '8px',
                   color: colors.text.primary,
                   fontSize: '14px',
-                  outline: 'none'
+                  outline: 'none',
+                  transition: 'border-color 0.2s'
                 }}
-                onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
-                onBlur={(e) => e.target.style.borderColor = colors.border.primary}
+                onFocus={(e) => {
+                  if (!cpfInvalido) {
+                    e.target.style.borderColor = '#3b82f6';
+                  }
+                }}
+                onBlur={(e) => {
+                  if (!cpfInvalido) {
+                    e.target.style.borderColor = colors.border.primary;
+                  }
+                }}
               />
+              {cpfInvalido && (
+                <div style={{
+                  marginTop: '6px',
+                  color: '#ef4444',
+                  fontSize: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}>
+                  ⚠️ CPF inválido
+                </div>
+              )}
             </div>
           </div>
 
@@ -467,26 +559,26 @@ export default function ModalAdicionarCandidato({ isOpen, onClose, onCandidatoAd
               Cancelar
             </button>
             <button
-            type="submit"
-            disabled={carregando}
-            style={{
-              flex: 1,
-              padding: '12px',
-              background: carregando
-                ? colors.bg.tertiary
-                : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-              color: '#747171ff',
-              border: 'none',
-              borderRadius: '10px',
-              cursor: carregando ? 'not-allowed' : 'pointer',
-              fontWeight: '700',
-              fontSize: '14px',
-              boxShadow: carregando ? 'none' : '0 4px 12px rgba(16, 185, 129, 0.3)',
-              opacity: 1
-            }}
-          >
-            {carregando ? '⏳ Salvando...' : '✅ Adicionar Candidato'}
-          </button>
+              type="submit"
+              disabled={carregando || cpfInvalido}
+              style={{
+                flex: 1,
+                padding: '12px',
+                background: (carregando || cpfInvalido)
+                  ? colors.bg.tertiary
+                  : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '10px',
+                cursor: (carregando || cpfInvalido) ? 'not-allowed' : 'pointer',
+                fontWeight: '700',
+                fontSize: '14px',
+                boxShadow: (carregando || cpfInvalido) ? 'none' : '0 4px 12px rgba(16, 185, 129, 0.3)',
+                opacity: (carregando || cpfInvalido) ? 0.6 : 1
+              }}
+            >
+              {carregando ? '⏳ Salvando...' : '✅ Adicionar Candidato'}
+            </button>
           </div>
         </form>
       </div>

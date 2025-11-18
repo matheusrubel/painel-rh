@@ -822,12 +822,25 @@ export default function KanbanCandidatos() {
 
       const candidatosComHistorico = await Promise.all(
         candidatos?.map(async (candidato) => {
-          const { data: historicos } = await supabase
-            .from('historico_candidatos')
-            .select('*')
-            .or(`nome_completo.ilike.%${candidato.nome_completo}%,telefone.eq.${candidato.telefone}`)
-            .order('data_inscricao', { ascending: false });
+          // ✅ Buscar histórico por CPF (mais confiável)
+            let historicos = null;
 
+            if (candidato.cpf) {
+              const { data: hist } = await supabase
+                .from('historico_candidatos')
+                .select('*')
+                .eq('cpf', candidato.cpf)
+                .order('data_inscricao', { ascending: false });
+              historicos = hist;
+            } else {
+              // Fallback: busca por nome se não tiver CPF
+              const { data: hist } = await supabase
+                .from('historico_candidatos')
+                .select('*')
+                .ilike('nome_completo', `%${candidato.nome_completo}%`)
+                .order('data_inscricao', { ascending: false });
+              historicos = hist;
+            }
           return {
             ...candidato,
             historico_anterior: historicos && historicos.length > 0 ? historicos : null

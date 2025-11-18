@@ -2,10 +2,10 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../config/supabase';
 import { showSuccess, showError } from '../utils/toast';
 import { handleError } from '../utils/errorHandler';
-import { useTheme } from '../contexts/ThemeContext'; // ✅ NOVO
+import { useTheme } from '../contexts/ThemeContext';
 
 export default function TabelaCandidatos({ filtros, setPaginaAtual }) {
-  const { colors } = useTheme(); // ✅ NOVO
+  const { colors } = useTheme();
   const [candidatos, setCandidatos] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [candidatoExpandido, setCandidatoExpandido] = useState(null);
@@ -47,17 +47,30 @@ export default function TabelaCandidatos({ filtros, setPaginaAtual }) {
       if (error) throw error;
       setCandidatos(data || []);
       
-      // ✅ CORRIGIDO: Verificar histórico por NOME e TELEFONE
+      // ✅ CORRIGIDO: Verificar histórico por CPF (mais confiável)
       if (data) {
         const historicosTemp = {};
         
         for (const candidato of data) {
-          // Buscar no histórico por nome OU telefone
-          const { data: historicos } = await supabase
-            .from('historico_candidatos')
-            .select('*')
-            .or(`nome_completo.ilike.%${candidato.nome_completo}%,telefone.eq.${candidato.telefone}`)
-            .order('data_inscricao', { ascending: false });
+          // Se tem CPF, busca por CPF. Senão, busca por nome
+          let historicos = null;
+          
+          if (candidato.cpf) {
+            const { data: hist } = await supabase
+              .from('historico_candidatos')
+              .select('*')
+              .eq('cpf', candidato.cpf)
+              .order('data_inscricao', { ascending: false });
+            historicos = hist;
+          } else {
+            // Fallback: busca por nome se não tiver CPF
+            const { data: hist } = await supabase
+              .from('historico_candidatos')
+              .select('*')
+              .ilike('nome_completo', `%${candidato.nome_completo}%`)
+              .order('data_inscricao', { ascending: false });
+            historicos = hist;
+          }
           
           if (historicos && historicos.length > 0) {
             historicosTemp[candidato.id] = historicos;
@@ -170,7 +183,6 @@ export default function TabelaCandidatos({ filtros, setPaginaAtual }) {
         {candidatos.length} candidato(s) encontrado(s)
       </div>
 
-      {/* TABELA COM TEMA */}
       <div style={{ 
         backgroundColor: colors.bg.secondary,
         borderRadius: '12px',
@@ -178,7 +190,6 @@ export default function TabelaCandidatos({ filtros, setPaginaAtual }) {
         border: `1px solid ${colors.border.primary}`,
         boxShadow: colors.shadow.sm
       }}>
-        {/* Header */}
         <div style={{
           display: 'grid',
           gridTemplateColumns: '2fr 2fr 1.5fr 1fr 1fr 2.5fr',
@@ -198,10 +209,8 @@ export default function TabelaCandidatos({ filtros, setPaginaAtual }) {
           <div style={{ textAlign: 'center' }}>Ações</div>
         </div>
 
-        {/* Rows */}
         {candidatos.map(candidato => (
           <div key={candidato.id}>
-            {/* Linha principal */}
             <div style={{
               display: 'grid',
               gridTemplateColumns: '2fr 2fr 1.5fr 1fr 1fr 2.5fr',
@@ -222,7 +231,6 @@ export default function TabelaCandidatos({ filtros, setPaginaAtual }) {
                 <span onClick={() => toggleExpand(candidato.id)}>
                   {candidato.nome_completo}
                 </span>
-                {/* ✅ TAG DE HISTÓRICO */}
                 {historicosPorCandidato[candidato.id] && (
                   <span
                     onClick={(e) => {
@@ -231,7 +239,7 @@ export default function TabelaCandidatos({ filtros, setPaginaAtual }) {
                     }}
                     style={{
                       background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                      color: '#9c9999ff',
+                      color: '#ffffff',
                       padding: '4px 8px',
                       borderRadius: '12px',
                       fontSize: '10px',
@@ -283,7 +291,6 @@ export default function TabelaCandidatos({ filtros, setPaginaAtual }) {
                 {formatarData(candidato.criado_em)}
               </div>
 
-              {/* BOTÕES DE AÇÃO */}
               <div style={{ 
                 display: 'flex', 
                 gap: '8px', 
@@ -365,7 +372,6 @@ export default function TabelaCandidatos({ filtros, setPaginaAtual }) {
               </div>
             </div>
 
-            {/* DETALHES EXPANDIDOS */}
             {candidatoExpandido === candidato.id && (
               <div style={{
                 padding: '20px',
@@ -373,7 +379,6 @@ export default function TabelaCandidatos({ filtros, setPaginaAtual }) {
                 borderBottom: `1px solid ${colors.border.secondary}`
               }}>
                 <div style={{ display: 'grid', gap: '15px' }}>
-                  {/* MENSAGEM DO SITE */}
                   {candidato.mensagem && (
                     <div>
                       <strong style={{ color: colors.status.warning, display: 'block', marginBottom: '8px' }}>
@@ -394,7 +399,6 @@ export default function TabelaCandidatos({ filtros, setPaginaAtual }) {
                     </div>
                   )}
 
-                  {/* LinkedIn */}
                   {candidato.linkedin_url && (
                     <div>
                       <strong style={{ color: colors.text.primary, marginBottom: '5px', display: 'block' }}>
@@ -411,7 +415,6 @@ export default function TabelaCandidatos({ filtros, setPaginaAtual }) {
                     </div>
                   )}
 
-                  {/* Histórico Resumido */}
                   {historicosPorCandidato[candidato.id] && (
                     <div>
                       <strong style={{ color: colors.text.primary, marginBottom: '8px', display: 'block' }}>
@@ -422,7 +425,7 @@ export default function TabelaCandidatos({ filtros, setPaginaAtual }) {
                         style={{
                           padding: '8px 16px',
                           background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                          color: '#979292ff',
+                          color: '#ffffff',
                           border: 'none',
                           borderRadius: '8px',
                           cursor: 'pointer',
@@ -444,7 +447,6 @@ export default function TabelaCandidatos({ filtros, setPaginaAtual }) {
         ))}
       </div>
 
-      {/* ✅ MODAL DE HISTÓRICO DETALHADO */}
       {mostrarHistorico && historicosPorCandidato[mostrarHistorico] && (
         <div
           onClick={() => setMostrarHistorico(null)}

@@ -54,11 +54,25 @@ export default function ModalDetalhesEtapa({ candidato, isOpen, onClose, onAtual
   // ✅ NOVO: Buscar histórico de processos anteriores
   const fetchHistoricoAnterior = async () => {
     try {
-      const { data: historicos } = await supabase
-        .from('historico_candidatos')
-        .select('*')
-        .or(`nome_completo.ilike.%${candidato.nome_completo}%,telefone.eq.${candidato.telefone}`)
-        .order('data_inscricao', { ascending: false });
+      let historicos = null;
+
+if (candidato.cpf) {
+  // Busca por CPF (mais confiável)
+  const { data: hist } = await supabase
+    .from('historico_candidatos')
+    .select('*')
+    .eq('cpf', candidato.cpf)
+    .order('data_inscricao', { ascending: false });
+  historicos = hist;
+} else {
+  // Fallback: busca por nome se não tiver CPF
+  const { data: hist } = await supabase
+    .from('historico_candidatos')
+    .select('*')
+    .ilike('nome_completo', `%${candidato.nome_completo}%`)
+    .order('data_inscricao', { ascending: false });
+  historicos = hist;
+}
 
       if (historicos && historicos.length > 0) {
         setHistoricoAnterior(historicos);
