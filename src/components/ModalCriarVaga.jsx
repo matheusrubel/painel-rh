@@ -92,14 +92,14 @@ export default function ModalCriarVaga({ isOpen, onClose, onVagaCriada }) {
         border: '1px solid #475569',
         margin: '20px 0'
       }}>
-        <h2 style={{ color: '#f8fafc', marginBottom: '20px' }}>
+        <h2 style={{ color: '#9c9ea0ff', marginBottom: '20px' }}>
           📝 Criar Nova Vaga
         </h2>
 
         <form onSubmit={handleSubmit}>
           {/* Título */}
           <div style={{ marginBottom: '20px' }}>
-            <label style={{ color: '#cbd5e1', display: 'block', marginBottom: '8px' }}>
+            <label style={{ color: '#9c9ea0ff', display: 'block', marginBottom: '8px' }}>
               Título da Vaga *
             </label>
             <input
@@ -122,7 +122,7 @@ export default function ModalCriarVaga({ isOpen, onClose, onVagaCriada }) {
 
           {/* Local */}
           <div style={{ marginBottom: '20px' }}>
-            <label style={{ color: '#cbd5e1', display: 'block', marginBottom: '8px' }}>
+            <label style={{ color: '#9c9ea0ff', display: 'block', marginBottom: '8px' }}>
               Local *
             </label>
             <input
@@ -145,7 +145,7 @@ export default function ModalCriarVaga({ isOpen, onClose, onVagaCriada }) {
 
           {/* Descrição */}
           <div style={{ marginBottom: '20px' }}>
-            <label style={{ color: '#cbd5e1', display: 'block', marginBottom: '8px' }}>
+            <label style={{ color: '#9c9ea0ff', display: 'block', marginBottom: '8px' }}>
               Descrição da Vaga
             </label>
             <textarea
@@ -168,7 +168,7 @@ export default function ModalCriarVaga({ isOpen, onClose, onVagaCriada }) {
 
           {/* Atribuições */}
           <div style={{ marginBottom: '20px' }}>
-            <label style={{ color: '#cbd5e1', display: 'block', marginBottom: '8px' }}>
+            <label style={{ color: '#9c9ea0ff', display: 'block', marginBottom: '8px' }}>
               Atribuições e Responsabilidades * (uma por linha)
             </label>
             <textarea
@@ -195,7 +195,7 @@ export default function ModalCriarVaga({ isOpen, onClose, onVagaCriada }) {
 
           {/* Requisitos */}
           <div style={{ marginBottom: '20px' }}>
-            <label style={{ color: '#cbd5e1', display: 'block', marginBottom: '8px' }}>
+            <label style={{ color: '#9c9ea0ff', display: 'block', marginBottom: '8px' }}>
               Requisitos e Qualificações * (uma por linha)
             </label>
             <textarea
@@ -219,7 +219,7 @@ export default function ModalCriarVaga({ isOpen, onClose, onVagaCriada }) {
 
           {/* Benefícios */}
           <div style={{ marginBottom: '20px' }}>
-            <label style={{ color: '#cbd5e1', display: 'block', marginBottom: '8px' }}>
+            <label style={{ color: '#9c9ea0ff', display: 'block', marginBottom: '8px' }}>
               Benefícios (uma por linha)
             </label>
             <textarea

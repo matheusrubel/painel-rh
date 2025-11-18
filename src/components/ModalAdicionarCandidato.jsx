@@ -567,7 +567,7 @@ export default function ModalAdicionarCandidato({ isOpen, onClose, onCandidatoAd
                 background: (carregando || cpfInvalido)
                   ? colors.bg.tertiary
                   : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                color: '#ffffff',
+                color: '#8d8888ff',
                 border: 'none',
                 borderRadius: '10px',
                 cursor: (carregando || cpfInvalido) ? 'not-allowed' : 'pointer',

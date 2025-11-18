@@ -666,17 +666,17 @@ export default function Login({ onLogin }) {
           }}>
             <p style={{
               color: isDark ? '#64748b' : '#94a3b8',
-              fontSize: '0.6875rem',
+              fontSize: '0.8000rem',
               lineHeight: '1.4'
             }}>
               © 2025 Michelc Assessoria Contábil • Acesso restrito ao RH
             </p>
             <p style={{
               color: isDark ? '#475569' : '#a1a1aa',
-              fontSize: '0.625rem',
+              fontSize: '0.780rem',
               marginTop: '0.25rem'
             }}>
-              Desenvolvido pelo setor de Inteligência de Dados e Automação
+              Desenvolvido pelo Setor de Inteligência de Dados e Automação
             </p>
           </div>
         </div>
