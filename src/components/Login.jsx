@@ -4,7 +4,7 @@ import { useTheme } from '../contexts/ThemeContext';
 
 
 export default function Login({ onLogin }) {
-  const { isDark } = useTheme();
+  const { isDark, toggleTheme } = useTheme();
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [erro, setErro] = useState('');
@@ -15,6 +15,7 @@ export default function Login({ onLogin }) {
   // Estados dos bonecos
   const [focoCampo, setFocoCampo] = useState('none');
   const [olhosX, setOlhosX] = useState(0);
+  const [erroAnimacao, setErroAnimacao] = useState(false);
 
 
   const handleLogin = async (e) => {
@@ -30,6 +31,8 @@ export default function Login({ onLogin }) {
 
     if (error) {
       setErro('Credenciais inválidas');
+      setErroAnimacao(true);
+      setTimeout(() => setErroAnimacao(false), 1000);
       setCarregando(false);
     } else {
       onLogin();
@@ -78,15 +81,17 @@ export default function Login({ onLogin }) {
 
   const BonecoProfissional = ({ index, tamanho = 80 }) => {
     const olhosFechados = focoCampo === 'senha' && !mostrarSenha;
+    const surpreso = focoCampo === 'senha' && mostrarSenha;
     
     return (
       <div style={{
         width: `${tamanho}px`,
         height: `${tamanho * 1.4}px`,
         position: 'relative',
-        transition: 'transform 0.4s ease'
+        transition: 'transform 0.4s ease',
+        animation: erroAnimacao ? 'shake 0.5s ease' : 'none'
       }}>
-        {/* Corpo */}
+        {/* Corpo - Branco/creme claro */}
         <div style={{
           position: 'absolute',
           bottom: 0,
@@ -94,11 +99,9 @@ export default function Login({ onLogin }) {
           transform: 'translateX(-50%)',
           width: `${tamanho * 0.7}px`,
           height: `${tamanho * 0.6}px`,
-          background: isDark 
-            ? 'linear-gradient(135deg, #475569 0%, #334155 100%)'
-            : 'linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%)',
+          background: '#fafaf8',
           borderRadius: `${tamanho * 0.35}px ${tamanho * 0.35}px 0 0`,
-          boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+          boxShadow: '0 4px 12px rgba(0,0,0,0.12)'
         }}>
           {/* Gravata */}
           <div style={{
@@ -114,7 +117,7 @@ export default function Login({ onLogin }) {
           }} />
         </div>
 
-        {/* Cabeça */}
+        {/* Cabeça - Bege claro */}
         <div style={{
           position: 'absolute',
           top: 0,
@@ -122,22 +125,20 @@ export default function Login({ onLogin }) {
           transform: 'translateX(-50%)',
           width: `${tamanho * 0.75}px`,
           height: `${tamanho * 0.75}px`,
-          background: isDark 
-            ? 'linear-gradient(135deg, #fde68a 0%, #fbbf24 100%)'
-            : 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+          background: '#fef3c7',
           borderRadius: '50%',
-          boxShadow: '0 6px 20px rgba(251, 191, 36, 0.25)',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
           transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
           overflow: 'hidden'
         }}>
-          {/* Chapéu/Cabelo */}
+          {/* Chapéu/Cabelo - Cinza escuro */}
           <div style={{
             position: 'absolute',
             top: '-5%',
             left: '10%',
             right: '10%',
             height: '35%',
-            background: isDark ? '#1e293b' : '#374151',
+            background: '#475569',
             borderRadius: '50% 50% 0 0'
           }} />
 
@@ -149,11 +150,12 @@ export default function Login({ onLogin }) {
                 top: '40%',
                 left: '22%',
                 width: '18%',
-                height: '18%',
+                height: surpreso ? '22%' : '18%',
                 background: 'white',
                 borderRadius: '50%',
                 boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)',
-                overflow: 'hidden'
+                overflow: 'hidden',
+                transition: 'height 0.3s ease'
               }}>
                 <div style={{
                   width: '60%',
@@ -172,11 +174,12 @@ export default function Login({ onLogin }) {
                 top: '40%',
                 right: '22%',
                 width: '18%',
-                height: '18%',
+                height: surpreso ? '22%' : '18%',
                 background: 'white',
                 borderRadius: '50%',
                 boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)',
-                overflow: 'hidden'
+                overflow: 'hidden',
+                transition: 'height 0.3s ease'
               }}>
                 <div style={{
                   width: '60%',
@@ -192,15 +195,15 @@ export default function Login({ onLogin }) {
               </div>
             </>
           ) : (
-            // Riscos brancos
+            // Olhos fechados PRETOS
             <>
               <div style={{
                 position: 'absolute',
                 top: '48%',
                 left: '22%',
                 width: '18%',
-                height: '2.5px',
-                background: '#ffffff',
+                height: '3px',
+                background: '#1f2937',
                 borderRadius: '2px',
                 transition: 'all 0.2s ease'
               }} />
@@ -209,24 +212,26 @@ export default function Login({ onLogin }) {
                 top: '48%',
                 right: '22%',
                 width: '18%',
-                height: '2.5px',
-                background: '#ffffff',
+                height: '3px',
+                background: '#1f2937',
                 borderRadius: '2px',
                 transition: 'all 0.2s ease'
               }} />
             </>
           )}
 
-          {/* Boca */}
+          {/* Boca - reage ao erro */}
           <div style={{
             position: 'absolute',
-            bottom: '22%',
+            bottom: erroAnimacao ? '20%' : '22%',
             left: '50%',
             transform: 'translateX(-50%)',
-            width: '35%',
-            height: '8%',
-            borderBottom: `3px solid #92400e`,
-            borderRadius: '0 0 50px 50px'
+            width: erroAnimacao ? '25%' : '35%',
+            height: erroAnimacao ? '12%' : '8%',
+            borderBottom: erroAnimacao ? 'none' : '3px solid #92400e',
+            borderRadius: erroAnimacao ? '50%' : '0 0 50px 50px',
+            background: erroAnimacao ? '#92400e' : 'transparent',
+            transition: 'all 0.3s ease'
           }} />
         </div>
       </div>
@@ -240,8 +245,64 @@ export default function Login({ onLogin }) {
       display: 'flex',
       background: isDark 
         ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)'
-        : 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)'
+        : 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+      position: 'relative'
     }}>
+      {/* Botão de Tema */}
+      <button
+        onClick={toggleTheme}
+        style={{
+          position: 'absolute',
+          top: '1.5rem',
+          right: '1.5rem',
+          width: '48px',
+          height: '48px',
+          borderRadius: '12px',
+          border: 'none',
+          background: isDark 
+            ? 'rgba(255, 255, 255, 0.1)'
+            : 'rgba(15, 23, 42, 0.1)',
+          backdropFilter: 'blur(10px)',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          transition: 'all 0.3s ease',
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+          zIndex: 1000
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'scale(1.05)';
+          e.currentTarget.style.background = isDark 
+            ? 'rgba(255, 255, 255, 0.15)'
+            : 'rgba(15, 23, 42, 0.15)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'scale(1)';
+          e.currentTarget.style.background = isDark 
+            ? 'rgba(255, 255, 255, 0.1)'
+            : 'rgba(15, 23, 42, 0.1)';
+        }}
+      >
+        {isDark ? (
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="5"/>
+            <line x1="12" y1="1" x2="12" y2="3"/>
+            <line x1="12" y1="21" x2="12" y2="23"/>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+            <line x1="1" y1="12" x2="3" y2="12"/>
+            <line x1="21" y1="12" x2="23" y2="12"/>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+          </svg>
+        ) : (
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1f2937" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+        )}
+      </button>
+
       {/* Lado Esquerdo - Bonecos */}
       <div style={{
         flex: '1',
@@ -275,8 +336,8 @@ export default function Login({ onLogin }) {
             src={isDark ? "/logo.png" : "/logoPreta.png"}
             alt="Michelc Assessoria Contábil"
             style={{
-              width: 240,
-              height: 240,
+              width: 280,
+              height: 280,
               objectFit: 'contain',
               display: 'block',
               margin: '0 auto',
@@ -316,37 +377,6 @@ export default function Login({ onLogin }) {
           }}>
             Gestão Inteligente
           </h2>
-          <p style={{
-            fontSize: '1rem',
-            color: isDark ? '#94a3b8' : '#64748b',
-            fontWeight: 500
-          }}>
-            Transformando dados em decisões
-          </p>
-        </div>
-
-        {/* Status */}
-        <div style={{
-          position: 'absolute',
-          bottom: '2rem',
-          display: 'flex',
-          gap: '0.5rem',
-          alignItems: 'center'
-        }}>
-          <div style={{
-            width: '8px',
-            height: '8px',
-            borderRadius: '50%',
-            background: '#10b981',
-            animation: 'pulse 2s infinite'
-          }} />
-          <span style={{
-            fontSize: '0.75rem',
-            color: isDark ? '#64748b' : '#9ca3af',
-            fontWeight: 500
-          }}>
-            Sistema Online
-          </span>
         </div>
       </div>
 
@@ -360,7 +390,7 @@ export default function Login({ onLogin }) {
         background: isDark ? '#0f172a' : '#ffffff'
       }}>
         <div style={{ width: '100%', maxWidth: '420px' }}>
-          <div style={{ marginBottom: '2rem' }}>
+          <div style={{ marginBottom: '2rem', textAlign: 'center' }}>
             <h1 style={{
               fontSize: '2rem',
               fontWeight: 800,
@@ -581,11 +611,13 @@ export default function Login({ onLogin }) {
                 fontSize: '1rem',
                 fontWeight: 700,
                 background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                color: '#ffffff',
-                border: 'none',
+                color: isDark ? '#ffffff' : '#1f2937',
+                border: isDark ? 'none' : '2px solid #d97706',
                 borderRadius: '10px',
                 cursor: carregando ? 'not-allowed' : 'pointer',
-                boxShadow: '0 4px 14px rgba(245, 158, 11, 0.4)',
+                boxShadow: isDark 
+                  ? '0 4px 14px rgba(245, 158, 11, 0.4)'
+                  : '0 4px 14px rgba(217, 119, 6, 0.5)',
                 transition: 'all 0.3s ease',
                 display: 'flex',
                 alignItems: 'center',
@@ -596,12 +628,16 @@ export default function Login({ onLogin }) {
               onMouseEnter={(e) => {
                 if (!carregando) {
                   e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 8px 20px rgba(245, 158, 11, 0.5)';
+                  e.currentTarget.style.boxShadow = isDark 
+                    ? '0 8px 20px rgba(245, 158, 11, 0.5)'
+                    : '0 8px 20px rgba(217, 119, 6, 0.6)';
                 }
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 4px 14px rgba(245, 158, 11, 0.4)';
+                e.currentTarget.style.boxShadow = isDark 
+                  ? '0 4px 14px rgba(245, 158, 11, 0.4)'
+                  : '0 4px 14px rgba(217, 119, 6, 0.5)';
               }}
             >
               {carregando ? (
@@ -629,10 +665,18 @@ export default function Login({ onLogin }) {
             textAlign: 'center'
           }}>
             <p style={{
-              color: isDark ? '#475569' : '#9ca3af',
-              fontSize: '0.75rem'
+              color: isDark ? '#64748b' : '#94a3b8',
+              fontSize: '0.6875rem',
+              lineHeight: '1.4'
             }}>
               © 2025 Michelc Assessoria Contábil • Acesso restrito ao RH
+            </p>
+            <p style={{
+              color: isDark ? '#475569' : '#a1a1aa',
+              fontSize: '0.625rem',
+              marginTop: '0.25rem'
+            }}>
+              Desenvolvido pelo setor de Inteligência de Dados e Automação
             </p>
           </div>
         </div>
@@ -645,6 +689,11 @@ export default function Login({ onLogin }) {
         }
         @keyframes spin {
           to { transform: rotate(360deg); }
+        }
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+          20%, 40%, 60%, 80% { transform: translateX(5px); }
         }
       `}</style>
     </div>
